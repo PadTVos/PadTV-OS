@@ -1,0 +1,16 @@
+[package]
+name = "padbridge-native"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "padbridge_native"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+jni = "0.21"
+sdl2 = { version = "0.37", features = ["ttf", "image"] }

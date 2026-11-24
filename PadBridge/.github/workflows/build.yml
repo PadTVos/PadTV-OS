@@ -1,0 +1,25 @@
+name: PadBridge build and APK tests
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Debian build and real sandbox integration tests
+        run: |
+          docker run --rm --privileged -v "$PWD:/source" -w /source debian:13 bash -euxc '
+            apt-get update
+            apt-get install -y --no-install-recommends ca-certificates rustc cargo pkg-config libsdl2-dev libsdl2-ttf-dev libsdl2-image-dev openjdk-21-jdk-headless aapt apksigner libsmali-java android-framework-res enjarify bubblewrap fonts-dejavu-core python3 dpkg-dev
+            bash scripts/build.sh
+            cargo test --workspace --locked
+            useradd -m builder
+            chown -R builder:builder /source
+            runuser -u builder -- python3 tests/integration.py
+            bash scripts/build-deb.sh
+          '
+      - uses: actions/upload-artifact@v4
+        with:
+          name: padbridge-debian-amd64
+          path: build/padbridge_*.deb

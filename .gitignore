@@ -8,3 +8,5 @@ __pycache__/
 .pytest_cache/
 /repositories/
 .padtv-export.json
+/PadBridge/target/
+/PadBridge/build/

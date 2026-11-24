@@ -57,3 +57,9 @@ flatpak
 xdg-desktop-portal
 xdg-desktop-portal-gtk
 xdg-desktop-portal-wlr
+openjdk-21-jre-headless
+apksigner
+enjarify
+bubblewrap
+libsdl2-ttf-2.0-0
+libsdl2-image-2.0-0

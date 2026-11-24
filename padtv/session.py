@@ -10,6 +10,8 @@ def wayland():
 
 
 def app_id(key, command):
+    if len(command) >= 3 and command[:2] in (['padbridge', 'run'], ('padbridge', 'run')):
+        return 'padbridge.' + command[2]
     if len(command) == 3 and command[:2] in (['flatpak', 'run'], ('flatpak', 'run')):
         # Some upstream clients publish a legacy Wayland app_id inside Flatpak.
         return {'org.videolan.VLC': 'vlc'}.get(command[2], command[2])

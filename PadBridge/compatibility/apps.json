@@ -1,0 +1,87 @@
+{
+  "schema": 1,
+  "runtime": "PadBridge 0.1.0 experimental",
+  "entries": [
+    {
+      "package": "org.padtv.fixture.basic",
+      "source": "tests/fixtures",
+      "version_code": 1,
+      "status": "tested-headless-and-wayland",
+      "checks": [
+        "signed-install",
+        "DEX-arithmetic",
+        "Activity",
+        "text-scene",
+        "image-asset",
+        "storage",
+        "D-pad-click",
+        "Wayland-rendered-text-and-image",
+        "virtual-keyboard-select"
+      ]
+    },
+    {
+      "package": "org.padtv.fixture.network",
+      "source": "tests/build_fixtures.py",
+      "version_code": 1,
+      "status": "tested-headless",
+      "checks": [
+        "network-denied",
+        "network-granted"
+      ]
+    },
+    {
+      "package": "org.padtv.fixture.isolation",
+      "source": "tests/build_fixtures.py",
+      "version_code": 1,
+      "status": "tested-headless",
+      "checks": [
+        "host-path-hidden"
+      ]
+    },
+    {
+      "package": "org.padtv.fixture.crash",
+      "source": "tests/build_fixtures.py",
+      "version_code": 1,
+      "status": "tested-headless",
+      "checks": [
+        "bounded-crash-recovery"
+      ]
+    },
+    {
+      "package": "org.padtv.fixture.audio",
+      "source": "tests/build_fixtures.py",
+      "status": "unsupported-verified",
+      "reason": "AudioTrack is not implemented"
+    },
+    {
+      "package": "org.padtv.fixture.media",
+      "source": "tests/build_fixtures.py",
+      "status": "unsupported-verified",
+      "reason": "MediaCodec is not implemented"
+    },
+    {
+      "package": "com.google.android.youtube.tv",
+      "source": "https://play.google.com/store/apps/details?id=com.google.android.youtube.tv",
+      "status": "not-tested",
+      "apk_obtained": false,
+      "expected_blockers": [
+        "Android framework coverage",
+        "Google services",
+        "media codecs",
+        "native ABI"
+      ]
+    },
+    {
+      "package": "com.netflix.ninja",
+      "source": "https://play.google.com/store/apps/details?id=com.netflix.ninja",
+      "status": "not-tested",
+      "apk_obtained": false,
+      "expected_blockers": [
+        "Android framework coverage",
+        "native ABI",
+        "licensed DRM",
+        "device certification"
+      ]
+    }
+  ]
+}

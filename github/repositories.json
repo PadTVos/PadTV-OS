@@ -22,6 +22,10 @@
     {
       "name": "PadTV-Website",
       "description": "Veřejná dokumentace a podklady webu PadTV"
+    },
+    {
+      "name": "PadBridge",
+      "description": "Experimental Android API translation layer for Linux and PadTV, implemented in Rust"
     }
   ]
 }

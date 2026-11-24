@@ -22,6 +22,7 @@ class UserApp:
     target: str
     symbol: str = "android"
     color: str = "#a8e4c0"
+    icon_path: str = ""
 
 
 YOUTUBE = UserApp("youtube", "YouTube", "web", "https://www.youtube.com/", "play", "#ff303f")
@@ -44,7 +45,7 @@ def validate_app(app):
         parsed = urlparse(app.target)
         if parsed.scheme not in ("https", "http") or not parsed.hostname or parsed.username or parsed.password:
             raise ValueError("Aplikace musí používat běžnou webovou adresu.")
-    elif app.kind == "android":
+    elif app.kind in ("android", "padbridge"):
         if not PACKAGE.fullmatch(app.target):
             raise ValueError("Neplatný název Android balíčku.")
     elif app.kind == "flatpak":
@@ -107,6 +108,8 @@ class AppLibrary:
 
     def command(self, app):
         validate_app(app)
+        if app.kind == "padbridge":
+            return ("padbridge", "run", app.target, "--restart-once")
         if app.kind == "android":
             return ("padtv-android", "launch", app.target)
         if app.kind == "flatpak":

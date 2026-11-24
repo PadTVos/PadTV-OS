@@ -1,8 +1,24 @@
-# PadTV 0.3 – System Core
+# PadTV 0.4 – Android Compatibility
 
 Samostatná televizní distribuce založená na **Debianu 13**, pro PC a mini PC
-**amd64** připojené přes HDMI. Vydání systému: 0.3; balíčky: 0.3.3.
+**amd64** připojené přes HDMI. Vydání systému: 0.4; balíčky: 0.4.0; PadBridge: 0.1.0 (experimentální).
 Rozhraní Liquid Glass vychází z dodaného návrhu a zachovává logo i pozadí.
+
+## PadBridge v této verzi
+
+Vlastní experimentální překladová vrstva v Rustu spouští základní podepsaná APK
+přes DEX → JVM a vlastní Android API, bez Android systému. Ve Store zvolte
+**Ukázka PadBridge** pro vlastní testovací APK nebo **Instalovat APK** pro soubor.
+V aplikaci lze spravovat oprávnění sítě a odinstalovat ji včetně volby zachování dat.
+YouTube TV a Netflix přes PadBridge zatím nejsou ověřené ani podporované;
+přehrávání médií, Bionic/ARM a DRM jsou další milníky. Waydroid zůstává oddělenou zálohou.
+
+[Samostatný PadBridge](https://github.com/PadTVos/PadBridge) ·
+[Architektura a stav implementace](PadBridge/docs/architecture.md) ·
+[Podporované API](PadBridge/docs/api.md)
+
+Zdroj v adresáři `PadBridge/` je vydaná kopie samostatného projektu, aby šlo OS
+sestavit z jednoho checkoutu. Export obou repozitářů vychází ze stejných souborů.
 
 ## Součásti
 
@@ -21,8 +37,8 @@ Skutečně provedené kontroly a zbývající zkoušky jsou v [protokolu ověře
 
 ## Vyzkoušení
 
-ISO: `dist/padtv-0.3.3-amd64.iso`; vedle něj je SHA-256.
-Pro celý systém ve Windows použijte zástupce **PadTV 0.3 System Core – virtuální PC**:
+ISO: `dist/padtv-0.4.0-amd64.iso`; vedle něj je SHA-256.
+Pro celý systém ve Windows použijte zástupce **PadTV 0.4 Android Compatibility – virtuální PC**:
 
 ```powershell
 .\.venv\Scripts\python.exe scripts/run-vm.py
@@ -132,3 +148,6 @@ přihlášení a přepínač `-Publish`. Lokální export není založení organ
 - [Store a pět repozitářů](docs/github-and-store.md)
 - [Stav ověření](docs/validation.md)
 - [Historické ověření 0.3.1](docs/validation-0.3.1.md)
+
+Pro sestavení 0.4 nainstalujte i [sestavovací závislosti PadBridge](PadBridge/README.md).
+`build-iso.sh` sestavuje také samostatný balíček `padbridge`.

@@ -14,8 +14,8 @@ import time
 
 ROOT = Path(__file__).resolve().parent.parent
 MACHINE = ROOT / "virtual-machines" / "PadTV-0.3-System-Core"
-DEFAULTS = {"name": "PadTV 0.3 System Core", "memory_mb": 16384, "cpus": 4,
-            "iso": "dist/padtv-0.3.3-amd64.iso", "disk_gb": 64, "persistent": True}
+DEFAULTS = {"name": "PadTV 0.4 Android Compatibility", "memory_mb": 16384, "cpus": 4,
+            "iso": "dist/padtv-0.4.0-amd64.iso", "disk_gb": 64, "persistent": True}
 
 
 def qemu_path():

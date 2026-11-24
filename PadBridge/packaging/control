@@ -1,0 +1,10 @@
+Package: padbridge
+Version: 0.1.0
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: PadTV Project <padikcz@users.noreply.github.com>
+Depends: libc6 (>= 2.41), libgcc-s1, libsdl2-2.0-0, libsdl2-ttf-2.0-0, libsdl2-image-2.0-0, openjdk-21-jre-headless, enjarify, aapt, apksigner, bubblewrap, coreutils, fonts-dejavu-core, python3
+Description: Experimental Android API translation for Linux and PadTV
+ Signed APK manager, bounded DEX-to-JVM backend, Linux process sandbox and
+ limited Android Activity and Wayland widget bridge. No Android OS required.

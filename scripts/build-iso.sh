@@ -23,6 +23,7 @@ mkdir -p "$padtv_root/build" "$padtv_root/dist"
 padtv_work=$(mktemp -d "$padtv_root/build/live.XXXXXXXX")
 cp -a "$padtv_root/live/." "$padtv_work/"
 bash "$padtv_root/scripts/build-deb.sh" "$padtv_work/config/packages.chroot"
+bash "$padtv_root/PadBridge/scripts/build-deb.sh" "$padtv_work/config/packages.chroot"
 bash "$padtv_root/scripts/build-exo-fix.sh" "$padtv_work/config/packages.chroot"
 chmod +x "$padtv_work/auto/config" "$padtv_work/config/hooks/live/0100-padtv.hook.chroot"
 chmod +x "$padtv_work/config/hooks/live/0200-padtv-boot.hook.binary"

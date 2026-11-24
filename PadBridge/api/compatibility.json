@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "status": "experimental subset; class presence does not imply all methods",
+  "classes": [
+    "android.app.Activity", "android.content.Context", "android.content.res.AssetManager",
+    "android.os.Bundle", "android.util.Log", "android.view.View", "android.view.View$OnClickListener",
+    "android.view.ViewGroup", "android.view.ViewGroup$LayoutParams", "android.view.KeyEvent",
+    "android.widget.LinearLayout", "android.widget.TextView", "android.widget.Button", "android.widget.ImageView",
+    "android.graphics.Bitmap", "android.graphics.BitmapFactory"
+  ],
+  "implemented": ["APK signature verification", "same-signer atomic package updates", "DEX 035 to JVM translation",
+    "Activity create/start/resume/pause/stop/destroy", "vertical LinearLayout", "TextView text", "Button click",
+    "ImageView bitmap from APK asset", "keyboard D-pad and select", "private file storage", "permission-gated java.net"],
+  "unsupported": ["compiled Android layout resources", "ART backend", "Binder", "SurfaceView/EGL", "Vulkan",
+    "Android native libraries/Bionic", "ARM64 translation", "MediaCodec", "AudioTrack", "MediaDrm", "Google Play Services",
+    "Leanback widgets", "BluetoothAdapter", "WifiManager", "PowerManager", "multi-Activity navigation"]
+}

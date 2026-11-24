@@ -1,0 +1,6 @@
+/target/
+/build/
+__pycache__/
+*.keystore
+*.key
+.padtv-export.json

@@ -17,6 +17,7 @@ from .actions import ACTIONS, POWER_COMMANDS, command_for, executable_available
 from .apps import AppLibrary, UserApp, YOUTUBE, default_data_dir
 from .navigation import next_in_direction
 from .store_ui import StoreMixin
+from .padbridge_ui import PadBridgeMixin
 
 WHITE = QColor("#f1f5f6")
 MUTED = QColor("#9daab9")
@@ -44,6 +45,12 @@ def rounded(painter, rect, fill, radius=20, border=None):
 
 
 def icon(p, symbol, rect, color):
+    if symbol.startswith('padbridge-icon:'):
+        bitmap = QPixmap(symbol.removeprefix('padbridge-icon:'))
+        if not bitmap.isNull():
+            p.drawPixmap(QRectF(*rect), bitmap, QRectF(bitmap.rect()))
+            return
+        symbol = 'android'
     p.save()
     p.translate(rect[0], rect[1])
     p.scale(rect[2] / 48, rect[3] / 48)
@@ -274,7 +281,7 @@ class ChoiceDialog(QDialog):
         return super().eventFilter(obj, event)
 
 
-class HomeWindow(StoreMixin, QWidget):
+class HomeWindow(PadBridgeMixin, StoreMixin, QWidget):
     fonts_loaded = False
 
     def __init__(self, preview=False, apps_dir=None):
@@ -369,9 +376,10 @@ class HomeWindow(StoreMixin, QWidget):
             return (action.title, action.description, action.symbol, action.color, lambda: self.launch(key), None)
 
         def user_entry(app, details=False):
-            subtitle = {'android':'Android', 'flatpak':'Flathub', 'web':'Webová aplikace'}[app.kind]
+            subtitle = {'android':'Waydroid', 'padbridge':'PadBridge · experimentální', 'flatpak':'Flathub', 'web':'Webová aplikace'}[app.kind]
             callback = (lambda: self.app_details(app)) if details else (lambda: self.launch_user(app))
-            return (app.title, subtitle, app.symbol, app.color, callback, app)
+            symbol = 'padbridge-icon:' + app.icon_path if app.kind == 'padbridge' and app.icon_path else app.symbol
+            return (app.title, subtitle, symbol, app.color, callback, app)
 
         android_entry = ("Android", "Aplikace a instalace APK", "android", "#c2e5cc", lambda: self.set_page("android"), None)
         manage_entry = ("Správa aplikací", "Instalace a odinstalace", "manage", "#d5c3fa", lambda: self.set_page("manage"), None)
@@ -383,6 +391,7 @@ class HomeWindow(StoreMixin, QWidget):
             netflix = next((app for app in installed if app.target == 'com.netflix.ninja'), None)
             if netflix:
                 entries.append(user_entry(netflix))
+            entries += [user_entry(app) for app in installed if app.kind == 'padbridge' and app not in (first, netflix)][:3]
             entries += [system_entry('browser')]
             entries += [('Store','','store','#e2e8e6',lambda:self.set_page('store'),None),
                         ('Nastavení','','settings','#e2e8e6',lambda:self.set_page('settings'),None)]
@@ -391,6 +400,8 @@ class HomeWindow(StoreMixin, QWidget):
             for i, name in enumerate(categories):
                 self.add_button(name, (64+i*168,340,158,48), lambda c=name:self.select_store_category(c), kind='filter')
             self.add_button('Zdroje', (1360,145,160,48), self.store_sources)
+            self.add_button('Instalovat APK', (1150,145,200,48), self.install_apk)
+            self.add_button('Ukázka PadBridge', (920,145,220,48), self.install_bridge_demo)
             products = self.store_items()
             self.grid_page = min(grid_page, max(0,(len(products)-1)//8))
             for i, product in enumerate(products[self.grid_page*8:self.grid_page*8+8]):
@@ -427,10 +438,12 @@ class HomeWindow(StoreMixin, QWidget):
             entries += [("Instalovat APK", "Běžná Android aplikace", "download", "#b9d9f8", self.install_apk, None), android_entry]
         else:
             entries = [
-                ("Spustit Android", "Otevřít prostředí Androidu", "android", "#a3e5b8", lambda: self.android_task("open"), None),
-                ("Připravit Android", "První spuštění a stažení", "settings", "#b6c5f8", self.prepare_android, None),
+                ("Instalovat APK", "PadBridge · experimentální runtime", "download", "#d2b9fa", self.install_apk, None),
+                ("Obnovit PadBridge", "Načíst nainstalovaná APK", "apps", "#b1dace", self.refresh_bridge, None),
+                ("Spustit Waydroid", "Dočasná záložní možnost", "android", "#a3e5b8", lambda: self.android_task("open"), None),
+                ("Připravit Waydroid", "Záloha pro další aplikace", "settings", "#b6c5f8", self.prepare_android, None),
                 ("Google Play", "Připravit oficiální obchod", "store", "#c2e5cc", lambda: self.prepare_android(google_play=True), None),
-                ("Instalovat APK", "Android aplikace ze souboru", "download", "#d2b9fa", self.install_apk, None),
+                ("APK do Waydroidu", "Instalace do záložního runtime", "download", "#d2b9fa", self.install_waydroid_apk, None),
                 ("Obnovit seznam", "Načíst nainstalované aplikace", "apps", "#b1dace", self.refresh_android, None),
             ]
             entries += [user_entry(app) for app in self.android_apps]
@@ -606,7 +619,7 @@ class HomeWindow(StoreMixin, QWidget):
             process.deleteLater()
             if code != 0 or status == QProcess.ExitStatus.CrashExit:
                 detail = f"{title} se nepodařilo dokončit (kód {code})."
-                if key in POWER_COMMANDS:
+                if key in POWER_COMMANDS or command[0] == 'padbridge':
                     try:
                         detail = json.loads(bytes(process.readAllStandardOutput()).decode()).get('error', detail)
                     except (ValueError, UnicodeError):
@@ -665,6 +678,9 @@ class HomeWindow(StoreMixin, QWidget):
             self.toast(str(error))
 
     def app_details(self, app):
+        if app.kind == 'padbridge':
+            self.bridge_details(app)
+            return
         if app.kind == 'flatpak':
             product = next((p for p in self.products if p.id == app.id), None)
             if product:
@@ -728,7 +744,7 @@ class HomeWindow(StoreMixin, QWidget):
             self.set_page("android")
         self.android_task("list", callback=loaded)
 
-    def install_apk(self):
+    def install_waydroid_apk(self):
         if self.preview:
             self.toast("APK se instalují v systému PadTV na Linuxu. Náhled Windows Android nespouští.")
             return

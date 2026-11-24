@@ -1,4 +1,4 @@
-"""Export five reviewable local Git repositories using an explicit allowlist."""
+"""Export six reviewable local Git repositories using an explicit allowlist."""
 import argparse
 import hashlib
 import json
@@ -10,7 +10,7 @@ ROOT=Path(__file__).resolve().parent.parent
 
 def files_under(path):
     if path.is_file(): return [path]
-    return [p for p in path.rglob('*') if p.is_file() and '__pycache__' not in p.parts and not p.is_symlink()]
+    return [p for p in path.rglob('*') if p.is_file() and not any(part in ('__pycache__','target','build','.git') for part in p.relative_to(path).parts) and not p.is_symlink()]
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -26,11 +26,13 @@ def main():
     config=json.loads((ROOT/'github/repositories.json').read_text(encoding='utf-8'))
     mapping={}
     os_files={}
-    for name in ('padtv','padtv_core','padtv_store','catalog','packaging','live','scripts','tests','docs','github','assets','README.md','requirements-dev.txt','.gitignore','.gitattributes'):
+    for name in ('PadBridge','padtv','padtv_core','padtv_store','catalog','packaging','live','scripts','tests','docs','github','assets','README.md','requirements-dev.txt','.gitignore','.gitattributes'):
         for p in files_under(ROOT/name): os_files[p.relative_to(ROOT).as_posix()]=p
     mapping['PadTV-OS']=os_files
+    mapping['PadBridge']={p.relative_to(ROOT/'PadBridge').as_posix():p for p in files_under(ROOT/'PadBridge')}
     mapping['PadTV-Store']={p.relative_to(ROOT).as_posix():p for p in files_under(ROOT/'padtv_store')}
     mapping['PadTV-Store'].update({'integration/store_ui.py':ROOT/'padtv/store_ui.py',
+        'integration/padbridge_ui.py':ROOT/'padtv/padbridge_ui.py',
         'catalog/apps.json':ROOT/'catalog/apps.json','docs/architecture.md':ROOT/'docs/github-and-store.md'})
     mapping['PadTV-Apps']={'catalog/apps.json':ROOT/'catalog/apps.json','catalog/schema.json':ROOT/'catalog/schema.json',
                           'scripts/validate.py':ROOT/'github/validate-catalog.py',
@@ -48,9 +50,9 @@ def main():
         'PadTV-Updates':'Metadata systémových vydání PadTV.\n\n'
             '`python scripts/release-manifest.py obraz.iso --url https://SKUTECNY-HOST/vydani.iso --output release.json --sign-key FINGERPRINT`\n\n'
             'URL musí odkazovat na skutečně publikovaný soubor. Soukromé klíče zůstávají mimo Git. '
-            'Automatický aktualizátor a rollback OS nejsou součástí 0.3. '
+            'Automatický aktualizátor a rollback OS nejsou součástí 0.4. '
             'Žádné aktivní aktualizační kanály zatím nejsou zveřejněné.\n',
-        'PadTV-Website':'Dokumentace PadTV 0.3 – System Core.\n\n'
+        'PadTV-Website':'Dokumentace PadTV 0.4 – Android Compatibility.\n\n'
             '- [Architektura](docs/system-core.md)\n- [Store a repozitáře](docs/github-and-store.md)\n'
             '- [Stav ověření](docs/validation.md)\n\n'
             'Doména a veřejný web dosud nejsou nasazené. Toto je zdrojová dokumentace pro další web.\n'}
@@ -75,6 +77,7 @@ def main():
             target.parent.mkdir(parents=True,exist_ok=True)
             shutil.copyfile(source,target)
         if name in intros:
+            intros[name] += '\n[PadBridge — experimentální Android kompatibilita](https://github.com/PadTVos/PadBridge).\n'
             (dest/'README.md').write_text('# '+name+'\n\n'+intros[name],encoding='utf-8')
             (dest/'.gitignore').write_text('__pycache__/\n.venv/\n*.iso\n*.qcow2\n*.key\n.padtv-export.json\n',encoding='utf-8')
         if name=='PadTV-OS':
