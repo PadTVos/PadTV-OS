@@ -84,8 +84,8 @@ def main():
                if p.is_file() and '.git' not in p.relative_to(dest).parts
                and '__pycache__' not in p.relative_to(dest).parts and p.name!='.padtv-export.json'}
         (dest/'.padtv-export.json').write_text(json.dumps({'repository':name,'visibility':'public',
-            'remote_created':False,'files':owned},indent=2)+'\n',encoding='utf-8')
+            'remote_created':config.get('remote_status') == 'published','files':owned},indent=2)+'\n',encoding='utf-8')
         if not (dest/'.git').exists(): subprocess.run(['git','init','--initial-branch=main',str(dest)],check=True,capture_output=True)
-        print(f'{name}: {len(owned)} files prepared; no remote created')
+        print(f'{name}: {len(owned)} files prepared')
 
 if __name__=='__main__': main()

@@ -113,6 +113,13 @@ jednorázové VM; mění skutečnou grafickou relaci a systémové nastavení.
 
 ## GitHub
 
+Veřejné zdroje jsou v organizaci [PadTVos](https://github.com/PadTVos):
+[OS](https://github.com/PadTVos/PadTV-OS), [Updates](https://github.com/PadTVos/PadTV-Updates),
+[Store](https://github.com/PadTVos/PadTV-Store), [Apps](https://github.com/PadTVos/PadTV-Apps)
+a [Website](https://github.com/PadTVos/PadTV-Website).
+
+Skripty pro přípravu a první publikaci:
+
 ```powershell
 python scripts/prepare-repositories.py
 .\scripts\publish-repositories.ps1 -Organization PadTVos

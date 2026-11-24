@@ -1,7 +1,7 @@
 {
   "organization": "PadTVos",
   "visibility": "public",
-  "remote_status": "not_created",
+  "remote_status": "published",
   "repositories": [
     {
       "name": "PadTV-OS",
