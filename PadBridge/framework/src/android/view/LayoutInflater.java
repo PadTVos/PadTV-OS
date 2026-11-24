@@ -22,14 +22,16 @@ public class LayoutInflater {
         String cls=tag.contains(".")?tag:(tag.equals("View")?"android.view.View":"android.widget."+tag);
         android.util.AttributeSet attrs=new org.padtv.bridge.XmlAttributes(e,context.getResources());
         View v=factory2!=null?factory2.onCreateView(parent,tag,context,attrs):factory==null?null:factory.onCreateView(tag,context,attrs);
-        if(v==null)v=(View)Class.forName(cls).getConstructor(Context.class).newInstance(context);
+        if(v==null){Class<?> type=Class.forName(cls);try{v=(View)type.getConstructor(Context.class,android.util.AttributeSet.class).newInstance(context,attrs);}catch(NoSuchMethodException missing){v=(View)type.getConstructor(Context.class).newInstance(context);}}
         if(e.hasAttribute("id"))v.setId(id(e.getAttribute("id")));
         v.setLayoutParams(new ViewGroup.LayoutParams(size(e.getAttribute("layout_width")),size(e.getAttribute("layout_height"))));
         if(v instanceof LinearLayout){String o=e.getAttribute("orientation");((LinearLayout)v).setOrientation(o.equals("vertical")||o.equals("1")?1:0);}
         if(e.hasAttribute("text")){if(!(v instanceof TextView))throw new UnsupportedOperationException("text on non TextView");((TextView)v).setText(resolve(e.getAttribute("text")));}
         if(e.hasAttribute("src")&&v instanceof ImageView)((ImageView)v).setImageResource(id(e.getAttribute("src")));
         if(e.hasAttribute("onClick")){final String method=e.getAttribute("onClick");v.setOnClickListener(new View.OnClickListener(){public void onClick(View view){try{context.getClass().getMethod(method,View.class).invoke(context,view);}catch(Exception ex){throw new IllegalStateException(ex);}}});}
-        if(e.hasAttribute("visibility")&&!e.getAttribute("visibility").equals("visible")&&!e.getAttribute("visibility").equals("0"))throw new UnsupportedOperationException("Non-visible XML nodes are not implemented");
+        if(e.hasAttribute("visibility")){String value=e.getAttribute("visibility");v.setVisibility(value.equals("gone")||value.equals("8")?8:value.equals("invisible")||value.equals("4")?4:0);}
+        if(e.hasAttribute("background")&&e.getAttribute("background").startsWith("#"))v.setBackgroundColor(android.graphics.Color.parseColor(e.getAttribute("background")));
+        if(v instanceof TextView){if(e.hasAttribute("textColor")&&e.getAttribute("textColor").startsWith("#"))((TextView)v).setTextColor(android.graphics.Color.parseColor(e.getAttribute("textColor")));if(e.hasAttribute("textSize"))((TextView)v).setTextSize(size(e.getAttribute("textSize")));}
         NodeList children=e.getChildNodes();for(int i=0;i<children.getLength();i++)if(children.item(i) instanceof Element){if(!(v instanceof ViewGroup))throw new IllegalArgumentException("Child on leaf view");((ViewGroup)v).addView(element((Element)children.item(i),depth+1,v));}
         return v;
     }

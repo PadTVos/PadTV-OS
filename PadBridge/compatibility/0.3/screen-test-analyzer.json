@@ -1,0 +1,62 @@
+{
+  "analyzer_version": "0.3.0",
+  "app": {
+    "abis": [],
+    "activity": "com.chucktech.sceentest.MainActivity",
+    "icon": "res/9w.png",
+    "installation_id": "",
+    "package": "com.chucktech.sceentest",
+    "permissions": [],
+    "sha256": "a68b762262f57ae77ba0faead7499e1907093329b58752bd957b18284446752e",
+    "signers": [
+      "50bb796683ab9f6e4d33eaffd6a355c29242cca9ea666f5e489aa7f9e3111440"
+    ],
+    "split": null,
+    "splits": [],
+    "television": true,
+    "title": "屏幕测试",
+    "version_code": 2,
+    "version_name": "1.0.1"
+  },
+  "native": {
+    "assessment": "Static class references only; method signatures, reflection, resources and behavior require execution tests",
+    "backend": "enjarify-openjdk",
+    "defined_classes": 13,
+    "dex_errors": [],
+    "dex_files": 1,
+    "dex_versions": [
+      "035"
+    ],
+    "drm": "No licensed MediaDrm provider; Widevine and protected video unavailable",
+    "eligible_for_trial": true,
+    "google_play_services": false,
+    "native_abi_supported": true,
+    "native_details": [],
+    "native_libraries": [],
+    "unsupported_classes": []
+  },
+  "observed_runtime_errors": [],
+  "observed_runtime_identity": {
+    "apk_storage_id": "a68b762262f57ae77ba0faead7499e1907093329b58752bd957b18284446752e",
+    "backend": "enjarify-openjdk",
+    "framework_sha256": "eb91bdc8c86556dc4b1901f9d9523501b4aa23d63bbcbd511511077e81daea4e",
+    "padbridge_version": "0.3.0"
+  },
+  "ok": true,
+  "runtime_log_matches_installed_build": true,
+  "static": {
+    "analysis_errors": [],
+    "assessment": "Static references only, including bundled dormant libraries. Reflection/dynamic loading and behavioral equivalence are not proven. Missing signatures are checked against implemented host classes; absent-class methods are covered by missing_classes.",
+    "defined_classes": 13,
+    "dex_files": 1,
+    "drm_references": [],
+    "google_play_services_references": [],
+    "missing_classes": [],
+    "missing_methods": [
+      "com/chucktech/sceentest/PatternView.isAttachedToWindow()Z"
+    ],
+    "ok": true,
+    "unsupported_instructions": []
+  },
+  "tested_playback": false
+}

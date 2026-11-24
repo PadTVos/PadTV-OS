@@ -35,24 +35,27 @@ def main():
         'integration/padbridge_ui.py':ROOT/'padtv/padbridge_ui.py',
         'catalog/apps.json':ROOT/'catalog/apps.json','docs/architecture.md':ROOT/'docs/github-and-store.md'})
     mapping['PadTV-Apps']={'catalog/apps.json':ROOT/'catalog/apps.json','catalog/schema.json':ROOT/'catalog/schema.json',
+                          'compatibility/apps.json':ROOT/'PadBridge/compatibility/apps.json',
                           'scripts/validate.py':ROOT/'github/validate-catalog.py',
                           '.github/workflows/validate.yml':ROOT/'github/catalog-ci.yml'}
     mapping['PadTV-Updates']={'scripts/release-manifest.py':ROOT/'scripts/release-manifest.py',
+                             'releases/0.6.0.json':ROOT/'github/release-0.6.json',
                              'docs/architecture.md':ROOT/'docs/system-core.md'}
     mapping['PadTV-Website']={p.relative_to(ROOT).as_posix():p for p in files_under(ROOT/'docs')}
     intros={
         'PadTV-Store':'Modulární poskytovatelé aplikací PadTV. Spusťte `python -m padtv_store.cli status`.\n\n'
             'Qt adaptér je v `integration/store_ui.py` a používá rozhraní hostitele PadTV OS. '
-            'Katalog je při vydání převzatý z PadTV-Apps; živý systém nestahuje neověřený kód z GitHubu.\n',
+            'Katalog je při vydání převzatý z PadTV-Apps. GitHub poskytovatel stahuje APK z konkrétního Release; '
+            'před instalací ověřuje schválenou velikost, SHA-256, podpis a identitu balíčku.\n',
         'PadTV-Apps':'Verzovaný katalog aplikací PadTV. Upravujte `catalog/apps.json`; '
             'spusťte `pip install jsonschema` a `python scripts/validate.py`. '
             'Nepřidávejte APK ani binární soubory cizích aplikací.\n',
         'PadTV-Updates':'Metadata systémových vydání PadTV.\n\n'
             '`python scripts/release-manifest.py obraz.iso --url https://SKUTECNY-HOST/vydani.iso --output release.json --sign-key FINGERPRINT`\n\n'
             'URL musí odkazovat na skutečně publikovaný soubor. Soukromé klíče zůstávají mimo Git. '
-            'Automatický aktualizátor a rollback OS nejsou součástí 0.5. '
+            'Automatický aktualizátor a rollback OS nejsou součástí 0.6. '
             'Žádné aktivní aktualizační kanály zatím nejsou zveřejněné.\n',
-        'PadTV-Website':'Dokumentace PadTV 0.5 – Android Runtime.\n\n'
+        'PadTV-Website':'Dokumentace PadTV 0.6 – Native Compatibility.\n\n'
             '- [Architektura](docs/system-core.md)\n- [Store a repozitáře](docs/github-and-store.md)\n'
             '- [Stav ověření](docs/validation.md)\n\n'
             'Doména a veřejný web dosud nejsou nasazené. Toto je zdrojová dokumentace pro další web.\n'}

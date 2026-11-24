@@ -43,7 +43,8 @@
               "web",
               "flatpak",
               "apt",
-              "android"
+              "android",
+              "padbridge"
             ]
           },
           "target": {
@@ -83,6 +84,31 @@
           "color": {
             "type": "string",
             "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "compatibility_status": {
+            "enum": [
+              "full",
+              "partial",
+              "experimental",
+              "unsupported",
+              "untested"
+            ]
+          },
+          "download_url": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "signer_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "download_size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 536870912
           }
         },
         "allOf": [
@@ -168,6 +194,34 @@
               "properties": {
                 "kind": {
                   "const": "android"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "padbridge"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "download_url",
+                "sha256",
+                "signer_sha256",
+                "download_size"
+              ],
+              "properties": {
+                "source": {
+                  "const": "github"
+                },
+                "target": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+$"
+                },
+                "download_url": {
+                  "pattern": "^https://github\\.com/[A-Za-z0-9_-]+/[A-Za-z0-9_.-]+/releases/download/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\\.apk$"
                 }
               }
             }

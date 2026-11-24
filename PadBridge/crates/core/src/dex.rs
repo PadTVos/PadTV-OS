@@ -139,28 +139,20 @@ pub fn diagnose_set(paths: &[PathBuf]) -> Result<Value> {
             .collect();
         for name in &found {
             let bytes = apk::read_entry(&mut zip, name)?;
-            let detail = match goblin::elf::Elf::parse(&bytes) {
-                Ok(elf) => {
-                    json!({"path":name,"elf_machine":elf.header.e_machine,"is_64_bit":elf.is_64,
-                "needed":elf.libraries,"unresolved_android_abi_dependencies":elf.libraries,
-                "undefined_symbols":elf.dynsyms.iter().filter(|s|s.st_shndx==0 && s.st_name!=0).filter_map(|s|elf.dynstrtab.get_at(s.st_name)).take(4096).collect::<Vec<_>>(),
-                "architecture":match elf.header.e_machine {62=>"x86_64",183=>"aarch64",40=>"arm",_=>"unsupported"},
-                "error":"Android/Bionic native loader is not implemented; host glibc libraries cannot satisfy this ABI"})
-                }
-                Err(error) => json!({"path":name,"error":format!("Invalid ELF: {error}")}),
-            };
+            let detail = crate::native_elf::inspect(name, &bytes);
             libraries.push(detail);
         }
         native.extend(found.into_iter().cloned());
     }
+    let native_supported = crate::native_elf::selected(paths).is_ok();
     missing.retain(|name| !defined.contains(name));
     Ok(
         json!({"backend":"enjarify-openjdk","dex_files":dex_count,"unsupported_classes":missing,
-        "dex_versions":versions,"defined_classes":defined.len(),"dex_errors":errors,"native_libraries":native,"native_details":libraries,"native_abi_supported":native.is_empty(),
+        "dex_versions":versions,"defined_classes":defined.len(),"dex_errors":errors,"native_libraries":native,"native_details":libraries,"native_abi_supported":native_supported,
         "google_play_services":missing.iter().any(|c|c.starts_with("com.google.android.gms.")),
         "drm":"No licensed MediaDrm provider; Widevine and protected video unavailable",
         "assessment":"Static class references only; method signatures, reflection, resources and behavior require execution tests",
-        "eligible_for_trial":dex_count>0 && missing.is_empty() && errors.is_empty() && native.is_empty()}),
+        "eligible_for_trial":dex_count>0 && missing.is_empty() && errors.is_empty() && native_supported}),
     )
 }
 #[cfg(test)]

@@ -1,4 +1,4 @@
-> Historical 0.1 baseline below. Current implementation: [0.2 boundaries](runtime-0.2.md); current test evidence: [PadTV 0.5 validation](https://github.com/PadTVos/PadTV-OS/blob/main/docs/validation-0.5.md).
+> Historical 0.1 baseline below. Current implementation: [0.3 boundaries](runtime-0.3.md); current test evidence: [PadTV 0.6 validation](https://github.com/PadTVos/PadTV-OS/blob/main/docs/validation-0.6.md).
 
 # Verification record — PadBridge 0.1, PadTV 0.4
 

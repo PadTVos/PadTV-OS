@@ -7,10 +7,10 @@ windowPlacement: center
 strings:
   productName: PadTV
   shortProductName: PadTV
-  version: "0.5 – Android Runtime"
-  shortVersion: "0.5"
-  versionedName: PadTV 0.5 – Android Runtime
-  shortVersionedName: PadTV 0.5
+  version: "0.6 – Native Compatibility"
+  shortVersion: "0.6"
+  versionedName: PadTV 0.6 – Native Compatibility
+  shortVersionedName: PadTV 0.6
   bootloaderEntryName: PadTV
 images:
   productLogo: logo.png

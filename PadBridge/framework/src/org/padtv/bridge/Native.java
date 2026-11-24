@@ -10,6 +10,10 @@ public final class Native {
     public static native void size(int id,int width,int height);
     public static native void root(int id);
     public static native void focus(int id);
+    public static native void visibility(int id,int value);
+    public static native void windowFlags(int flags);
+    public static native int[] displaySize();
+    public static native void layoutScene(int width,int height);
     public static native void run();
     public static native String snapshot();
 }

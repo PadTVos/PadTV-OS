@@ -1,0 +1,2 @@
+package android.util;
+public class TypedValue {public static final int COMPLEX_UNIT_PX=0,COMPLEX_UNIT_DIP=1,COMPLEX_UNIT_SP=2;public int type,data,resourceId;public CharSequence string;public static float applyDimension(int unit,float value,DisplayMetrics m){switch(unit){case 0:return value;case 1:return value*m.density;case 2:return value*m.scaledDensity;case 3:return value*m.xdpi/72;case 4:return value*m.xdpi;case 5:return value*m.xdpi/25.4f;default:throw new IllegalArgumentException("Invalid dimension unit");}}}

@@ -11,16 +11,20 @@ jobs:
         run: |
           docker run --rm --privileged -v "$PWD:/source" -w /source debian:13 bash -euxc '
             apt-get update
-            apt-get install -y --no-install-recommends ca-certificates rustc cargo pkg-config libsdl2-dev libsdl2-ttf-dev libsdl2-image-dev openjdk-21-jdk-headless aapt apksigner libsmali-java android-framework-res enjarify bubblewrap fonts-dejavu-core python3 dpkg-dev kotlin libxerial-sqlite-jdbc-java ffmpeg
+            apt-get install -y --no-install-recommends ca-certificates rustc cargo pkg-config libsdl2-dev libsdl2-ttf-dev libsdl2-image-dev openjdk-21-jdk-headless aapt apksigner libsmali-java android-framework-res enjarify bubblewrap fonts-dejavu-core python3 python3-pil dpkg-dev kotlin libxerial-sqlite-jdbc-java ffmpeg clang lld gcc libc6-dev
             bash scripts/build.sh
             cargo test --workspace --locked
             python3 scripts/fetch-test-tools.py
             python3 tests/build_fixtures.py
             python3 tests/build_runtime_fixtures.py
+            python3 tests/build_native_fixtures.py
+            python3 tests/analyzer_unit.py
             useradd -m builder
             chown -R builder:builder /source
             runuser -u builder -- python3 tests/integration.py
             runuser -u builder -- python3 tests/runtime05.py
+            runuser -u builder -- python3 tests/runtime06.py
+            runuser -u builder -- python3 tests/thirdparty06.py
             bash scripts/build-deb.sh
           '
       - uses: actions/upload-artifact@v4

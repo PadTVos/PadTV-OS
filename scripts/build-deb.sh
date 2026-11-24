@@ -34,6 +34,8 @@ install -m 755 "$padtv_root/packaging/padtv-android-display" "$padtv_stage/usr/l
 install -m 755 "$padtv_root/packaging/padtv-session-cleanup" "$padtv_stage/usr/lib/padtv/"
 install -m 644 "$padtv_root/packaging/padtv-shell.service" "$padtv_root/packaging/padtv-polkit.service" "$padtv_root/packaging/padtv-session.target" "$padtv_stage/usr/lib/systemd/user/"
 install -m 644 "$padtv_root"/padtv/assets/*.png "$padtv_stage/usr/share/padtv/padtv/assets/"
+install -d "$padtv_stage/usr/share/padtv/padtv/assets/icons-v6"
+install -m 644 "$padtv_root"/padtv/assets/icons-v6/* "$padtv_stage/usr/share/padtv/padtv/assets/icons-v6/"
 install -m 644 "$padtv_root/packaging/greetd.toml" "$padtv_stage/etc/padtv/"
 install -m 644 "$padtv_root/packaging/labwc/rc.xml" "$padtv_root/packaging/labwc/environment" "$padtv_stage/etc/padtv/labwc/"
 install -m 755 "$padtv_root/packaging/labwc/autostart" "$padtv_stage/etc/padtv/labwc/"

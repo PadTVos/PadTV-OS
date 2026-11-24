@@ -1,7 +1,7 @@
 //! Host JNI bridge. This is NOT a loader for Android/Bionic native libraries.
 use jni::{
     objects::{JByteArray, JClass, JString, JValue},
-    sys::{jint, jstring},
+    sys::{jint, jintArray, jstring},
     JNIEnv,
 };
 use sdl2::{
@@ -16,6 +16,9 @@ use std::sync::{Mutex, OnceLock};
 
 #[derive(Clone, Default, Serialize)]
 struct Node {
+    visibility: i32,
+    #[serde(skip)]
+    image_version: u64,
     kind: i32,
     layout: i32,
     width: i32,
@@ -28,6 +31,7 @@ struct Node {
 }
 #[derive(Clone, Default, Serialize)]
 struct Scene {
+    window_flags: i32,
     nodes: Vec<Node>,
     root: usize,
     focus: usize,
@@ -47,6 +51,66 @@ fn fail(env: &mut JNIEnv, message: impl ToString) {
             "java/lang/UnsupportedOperationException",
             message.to_string(),
         );
+    }
+}
+
+#[no_mangle]
+pub extern "system" fn Java_org_padtv_bridge_Native_visibility(
+    mut env: JNIEnv,
+    _: JClass,
+    id: jint,
+    value: jint,
+) {
+    if ![0, 4, 8].contains(&value) {
+        fail(&mut env, "Invalid visibility");
+        return;
+    }
+    if let Some(n) = scene().lock().unwrap().nodes.get_mut(id as usize) {
+        n.visibility = value;
+    } else {
+        fail(&mut env, "Invalid view");
+    }
+}
+#[no_mangle]
+pub extern "system" fn Java_org_padtv_bridge_Native_windowFlags(
+    mut env: JNIEnv,
+    _: JClass,
+    flags: jint,
+) {
+    if flags & !(1024 | 128) != 0 {
+        fail(&mut env, "Unsupported window flags");
+        return;
+    }
+    scene().lock().unwrap().window_flags = flags;
+}
+#[no_mangle]
+pub extern "system" fn Java_org_padtv_bridge_Native_displaySize(
+    mut env: JNIEnv,
+    _: JClass,
+) -> jintArray {
+    let size = sdl2::init()
+        .and_then(|s| s.video())
+        .and_then(|v| v.desktop_display_mode(0));
+    let (w, h) = if std::env::var("PADBRIDGE_HEADLESS").as_deref() == Ok("1") {
+        (1280, 720)
+    } else {
+        match size {
+            Ok(m) => (m.w, m.h),
+            Err(e) => {
+                fail(&mut env, e);
+                return std::ptr::null_mut();
+            }
+        }
+    };
+    match env.new_int_array(2).and_then(|a| {
+        env.set_int_array_region(&a, 0, &[w, h])?;
+        Ok(a)
+    }) {
+        Ok(a) => a.into_raw(),
+        Err(e) => {
+            fail(&mut env, e);
+            std::ptr::null_mut()
+        }
     }
 }
 
@@ -145,6 +209,7 @@ pub extern "system" fn Java_org_padtv_bridge_Native_image(
             if let Some(n) = scene().lock().unwrap().nodes.get_mut(id as usize) {
                 n.image_bytes = value.len();
                 n.image = value;
+                n.image_version = n.image_version.wrapping_add(1);
             } else {
                 fail(&mut env, "Invalid view");
             }
@@ -229,6 +294,9 @@ fn measure(s: &Scene, id: usize, horizontal: bool, depth: usize) -> Result<u32, 
         return Err("Layout cycle or nesting limit".into());
     }
     let n = s.nodes.get(id).ok_or("Invalid layout node")?;
+    if n.visibility == 8 {
+        return Ok(0);
+    }
     let explicit = if horizontal { n.width } else { n.height };
     if explicit >= 0 {
         return Ok(explicit as u32);
@@ -264,9 +332,10 @@ fn arrange(
         return Err("Layout cycle or view limit".into());
     }
     let n = s.nodes.get(id).ok_or("Invalid layout node")?;
-    if n.kind != 0 {
-        result.push((id, area));
+    if n.visibility != 0 {
+        return Ok(());
     }
+    result.push((id, area));
     let horizontal = n.layout == 0;
     let available = if horizontal {
         area.width()
@@ -277,6 +346,9 @@ fn arrange(
     let mut fill = 0;
     for child in &n.children {
         let c = &s.nodes[*child];
+        if c.visibility == 8 {
+            continue;
+        }
         let length = if horizontal { c.width } else { c.height };
         if length == -1 {
             fill += 1;
@@ -288,6 +360,9 @@ fn arrange(
     let mut offset = 0i32;
     for child in &n.children {
         let c = &s.nodes[*child];
+        if c.visibility == 8 {
+            continue;
+        }
         let dimension = |length: i32, available: u32, natural: u32| {
             if length >= 0 {
                 length as u32
@@ -357,8 +432,10 @@ fn run(env: &mut JNIEnv) -> Result<(), String> {
     let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
     eprintln!("PADBRIDGE_RENDERER={:?}", canvas.info());
     let texture_creator = canvas.texture_creator();
+    let mut image_cache = std::collections::HashMap::new();
     let font = ttf.load_font("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 25)?;
     let mut events = sdl.event_pump()?;
+    let mut previous_flags = -1;
     let mut targets: Vec<(usize, Rect)> = vec![];
     'running: loop {
         env.call_static_method("org/padtv/bridge/Host", "pump", "()V", &[])
@@ -407,16 +484,36 @@ fn run(env: &mut JNIEnv) -> Result<(), String> {
             }
         }
         let state = scene().lock().unwrap().clone();
+        if state.window_flags != previous_flags {
+            canvas
+                .window_mut()
+                .set_fullscreen(if state.window_flags & 1024 != 0 {
+                    sdl2::video::FullscreenType::Desktop
+                } else {
+                    sdl2::video::FullscreenType::Off
+                })?;
+            if state.window_flags & 128 != 0 {
+                video.disable_screen_saver();
+            } else {
+                video.enable_screen_saver();
+            }
+            previous_flags = state.window_flags;
+        }
         let mut items = vec![];
         let (width, height) = canvas.output_size()?;
+        let margin = if state.window_flags & 1024 != 0 {
+            0
+        } else {
+            40
+        };
         arrange(
             &state,
             state.root,
             Rect::new(
-                40,
-                36,
-                width.saturating_sub(80).max(1),
-                height.saturating_sub(72).max(1),
+                margin as i32,
+                margin as i32,
+                width.saturating_sub(margin * 2).max(1),
+                height.saturating_sub(margin * 2).max(1),
             ),
             &mut items,
             0,
@@ -425,6 +522,17 @@ fn run(env: &mut JNIEnv) -> Result<(), String> {
         canvas.set_draw_color(Color::RGB(13, 28, 29));
         canvas.clear();
         for (id, area) in items {
+            env.call_static_method(
+                "org/padtv/bridge/Host",
+                "layout",
+                "(III)V",
+                &[
+                    JValue::Int(id as i32),
+                    JValue::Int(area.width() as i32),
+                    JValue::Int(area.height() as i32),
+                ],
+            )
+            .map_err(|e| e.to_string())?;
             let node = &state.nodes[id];
             if node.kind == 2 {
                 canvas.set_draw_color(if id == state.focus {
@@ -435,13 +543,25 @@ fn run(env: &mut JNIEnv) -> Result<(), String> {
                 canvas.fill_rect(area)?;
                 targets.push((id, area));
             }
-            if node.kind == 3 && !node.image.is_empty() {
-                let texture = texture_creator.load_texture_bytes(&node.image)?;
+            if !node.image.is_empty() {
+                let stale = image_cache
+                    .get(&id)
+                    .map_or(true, |(version, _)| *version != node.image_version);
+                if stale {
+                    image_cache.insert(
+                        id,
+                        (
+                            node.image_version,
+                            texture_creator.load_texture_bytes(&node.image)?,
+                        ),
+                    );
+                }
+                let texture = &image_cache[&id].1;
                 let q = texture.query();
                 let scale = (area.height() as f64 / q.height as f64)
                     .min(area.width() as f64 / q.width as f64);
                 canvas.copy(
-                    &texture,
+                    texture,
                     None,
                     Rect::new(
                         area.x(),
@@ -474,6 +594,45 @@ fn run(env: &mut JNIEnv) -> Result<(), String> {
         std::thread::sleep(std::time::Duration::from_millis(16));
     }
     Ok(())
+}
+#[no_mangle]
+pub extern "system" fn Java_org_padtv_bridge_Native_layoutScene(
+    mut env: JNIEnv,
+    _: JClass,
+    width: jint,
+    height: jint,
+) {
+    if width < 1 || height < 1 || width > 4096 || height > 4096 {
+        fail(&mut env, "Invalid test surface size");
+        return;
+    }
+    let state = scene().lock().unwrap().clone();
+    let mut items = vec![];
+    if let Err(e) = arrange(
+        &state,
+        state.root,
+        Rect::new(0, 0, width as u32, height as u32),
+        &mut items,
+        0,
+    ) {
+        fail(&mut env, e);
+        return;
+    }
+    for (id, rect) in items {
+        if let Err(e) = env.call_static_method(
+            "org/padtv/bridge/Host",
+            "layout",
+            "(III)V",
+            &[
+                JValue::Int(id as i32),
+                JValue::Int(rect.width() as i32),
+                JValue::Int(rect.height() as i32),
+            ],
+        ) {
+            fail(&mut env, e);
+            return;
+        }
+    }
 }
 #[no_mangle]
 pub extern "system" fn Java_org_padtv_bridge_Native_run(mut env: JNIEnv, _: JClass) {

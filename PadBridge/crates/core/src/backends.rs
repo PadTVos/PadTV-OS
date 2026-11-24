@@ -21,7 +21,7 @@ impl Backend for Enjarify {
             "/usr/bin/java",
             "-Xmx384m",
             "-XX:ActiveProcessorCount=2",
-            "-Djava.library.path=/runtime:/usr/lib/x86_64-linux-gnu/jni",
+            "-Djava.library.path=/runtime:/native:/usr/lib/x86_64-linux-gnu/jni",
             "-cp",
             "/runtime/framework.jar:/app/classes.jar:/usr/share/java/sqlite-jdbc.jar",
             "org.padtv.bridge.Host",

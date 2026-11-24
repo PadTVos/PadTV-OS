@@ -45,6 +45,12 @@ def rounded(painter, rect, fill, radius=20, border=None):
 
 
 def icon(p, symbol, rect, color):
+    from .symbols import symbol_pixmap
+    if not symbol.startswith('padbridge-icon:'):
+        supplied = symbol_pixmap(symbol)
+        if not supplied.isNull():
+            p.drawPixmap(QRectF(*rect), supplied, QRectF(supplied.rect()))
+            return
     if symbol.startswith('padbridge-icon:'):
         bitmap = QPixmap(symbol.removeprefix('padbridge-icon:'))
         if not bitmap.isNull():
@@ -398,15 +404,15 @@ class HomeWindow(PadBridgeMixin, StoreMixin, QWidget):
         elif page == 'store':
             categories = ['Vše','Filmy a TV','Hudba','Zábava','Nástroje','Systém','Získané']
             for i, name in enumerate(categories):
-                self.add_button(name, (64+i*168,340,158,48), lambda c=name:self.select_store_category(c), kind='filter')
+                self.add_button(name, (64+i*168,240,158,48), lambda c=name:self.select_store_category(c), kind='filter')
             self.add_button('Zdroje', (1360,145,160,48), self.store_sources)
             self.add_button('Instalovat APK', (1150,145,200,48), self.install_apk)
             self.add_button('Ukázka PadBridge', (920,145,220,48), self.install_bridge_demo)
             products = self.store_items()
             self.grid_page = min(grid_page, max(0,(len(products)-1)//8))
             for i, product in enumerate(products[self.grid_page*8:self.grid_page*8+8]):
-                button = self.add_button(product.title, (64+(i%4)*370,405+(i//4)*210,354,203),
-                    lambda p=product:self.store_detail(p), kind='store', subtitle=product.category + ' · ' + {'web':'Web','flatpak':'Flathub','apt':'APT','android':'Google Play'}[product.kind],
+                button = self.add_button(product.title, (64+(i%4)*370,305+(i//4)*210,354,203),
+                    lambda p=product:self.store_detail(p), kind='store', subtitle=product.category + ' · ' + {'web':'Web','flatpak':'Flathub','apt':'APT','android':'Google Play','padbridge':'GitHub'}[product.kind],
                     symbol=product.symbol, color=product.color)
                 button.store_state = ('Součást OS' if product.kind == 'apt' else 'Získáno' if self.product_installed(product) else 'Google Play' if product.kind == 'android' else 'Získat')
             first_card = len(self.buttons)-min(8,len(products)-self.grid_page*8)
@@ -867,19 +873,12 @@ class HomeWindow(PadBridgeMixin, StoreMixin, QWidget):
         label(p, (1427, 39, 125, 50), now.strftime("%H:%M"), 25, WHITE, False, Qt.AlignmentFlag.AlignCenter)
         if self.page != "home":
             titles = {"apps": "Aplikace", "store":"Store", "settings": "Nastavení", "manage": "Správa aplikací", "android": "Android aplikace"}
-            subtitles = {"apps": "Všechno, co vás baví. Na jednom místě.", "settings": "Obraz, zvuk a připojení pro vaši televizi.",
+            subtitles = {"apps": "", "settings": "Obraz, zvuk a připojení pro vaši televizi.",
                          "manage": "Předinstalované aplikace můžete běžně odinstalovat.", "android": self.android_message,
-                         "store": "Aplikace pro vaši televizi"}
+                         "store": ""}
             title = f"Hledání: {self.search_text}" if self.page == "apps" and self.search_text else titles[self.page]
             label(p, (72, 133, 1400, 69), title, 43, WHITE, True)
             label(p, (76, 206, 1400, 34), subtitles[self.page], 19, QColor("#d3dfdf"))
-        if self.page == 'store':
-            gradient = QLinearGradient(72,0,1528,0)
-            gradient.setColorAt(0,QColor(105,88,216,92))
-            gradient.setColorAt(1,QColor(50,164,218,37))
-            rounded(p,(72,245,1456,82),gradient,22,QColor(255,255,255,48))
-            label(p,(100,250,1300,38),'Objevte nové aplikace',27,WHITE,True)
-            label(p,(100,289,1300,28),'Rozšiřte svůj PadTV o zábavu, hudbu a další možnosti.',18,QColor('#d6dfdf'))
         if self.preview:
             label(p, (72,860,700,24), f'Vývojový náhled · {RELEASE_NAME}', 12, QColor(230,245,245,100))
         if self.notice:

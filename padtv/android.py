@@ -55,8 +55,12 @@ def status():
         config = ConfigParser()
         config.read('/var/lib/waydroid/waydroid.cfg')
         result['google_play'] = config.get('waydroid', 'system_ota', fallback='').endswith('/GAPPS.json')
-        output = run(["waydroid", "status"], timeout=8, check=False).stdout
-        result["running"] = bool(re.search(r"Session:\s*RUNNING", output))
+        # `waydroid status` can activate its D-Bus service. Inventory must not
+        # start the fallback runtime merely because PadTV is showing the Store.
+        service = run(["systemctl", "is-active", "--quiet", "waydroid-container.service"], timeout=8, check=False)
+        if service.returncode == 0:
+            output = run(["waydroid", "status"], timeout=8, check=False).stdout
+            result["running"] = bool(re.search(r"Session:\s*RUNNING", output))
     return result
 
 

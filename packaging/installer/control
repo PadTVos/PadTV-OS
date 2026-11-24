@@ -1,9 +1,9 @@
 Package: padtv-installer
-Version: 0.5.0
+Version: 0.6.0
 Section: admin
 Priority: optional
 Architecture: all
 Maintainer: PadTV Project <padtv@localhost>
-Depends: padtv-core (>= 0.5.0), calamares, polkitd, pkexec, qt6-wayland, grub-pc-bin, grub-efi-amd64-bin, grub2-common, efibootmgr, dosfstools, squashfs-tools, rsync, util-linux-extra, console-setup
-Description: Graphical disk installer for PadTV Android Runtime
+Depends: padtv-core (>= 0.6.0), calamares, polkitd, pkexec, qt6-wayland, grub-pc-bin, grub-efi-amd64-bin, grub2-common, efibootmgr, dosfstools, squashfs-tools, rsync, util-linux-extra, console-setup
+Description: Graphical disk installer for PadTV Native Compatibility
  Calamares profile with PadTV branding, explicit disk confirmation and BIOS/UEFI boot.

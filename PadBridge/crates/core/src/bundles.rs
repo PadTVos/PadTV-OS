@@ -28,7 +28,10 @@ impl Bundle {
                 input.metadata()?.is_file() && input.metadata()?.len() <= apk::MAX_APK,
                 "Invalid APK/container size"
             );
-            if input.extension().and_then(|s| s.to_str()) == Some("apks") {
+            if matches!(
+                input.extension().and_then(|s| s.to_str()),
+                Some("apks" | "apkm")
+            ) {
                 let mut zip = zip::ZipArchive::new(fs::File::open(input)?)?;
                 ensure!(zip.len() <= 256, "Too many container entries");
                 for i in 0..zip.len() {

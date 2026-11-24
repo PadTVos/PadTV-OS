@@ -1,0 +1,48 @@
+{
+  "probe": "Debian host ART shared library",
+  "dex_executed": false,
+  "backend_available": false,
+  "libraries": [
+    {
+      "name": "liblog.so.0",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "libbase.so.0",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "libcutils.so.0",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "libziparchive.so.0",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "libbacktrace.so.0",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "libsigchain.so.0",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "libart.so.0",
+      "loaded": false,
+      "error": "/usr/lib/x86_64-linux-gnu/android/libart.so.0: undefined symbol: _ZTVN8tinyxml210XMLPrinterE"
+    }
+  ],
+  "next_required": [
+    "Matching host ART/libbase/ICU build",
+    "AOSP host libcore boot class path and JNI libraries",
+    "JNI VM creation and direct DEX test in bubblewrap",
+    "GC/reflection/thread/native and Wayland framework integration tests"
+  ]
+}

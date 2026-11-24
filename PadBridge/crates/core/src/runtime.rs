@@ -7,7 +7,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-fn share() -> PathBuf {
+pub(crate) fn share() -> PathBuf {
     env::var_os("PADBRIDGE_RUNTIME_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("/usr/lib/padbridge"))
@@ -177,6 +177,7 @@ pub fn run(
     let runtime = share()
         .canonicalize()
         .context("PadBridge runtime is not installed")?;
+    let native = crate::native_elf::stage(&sources, &version)?;
     backend.prepare(&version, &runtime)?;
     ensure!(
         apk::digest(&version.join("classes.jar"))?
@@ -200,6 +201,10 @@ pub fn run(
         cmd.arg("--ro-bind").arg(&runtime).arg("/runtime");
         cmd.arg("--ro-bind").arg(&version).arg("/app");
         cmd.arg("--bind").arg(&data).arg("/data");
+        cmd.arg("--ro-bind").arg(native.path()).arg("/native");
+        if headless {
+            cmd.args(["--setenv", "PADBRIDGE_HEADLESS", "1"]);
+        }
         if !headless {
             let xdg = PathBuf::from(env::var_os("XDG_RUNTIME_DIR").context("No Wayland session")?);
             let display = env::var("WAYLAND_DISPLAY").unwrap_or_else(|_| "wayland-0".into());
@@ -227,6 +232,14 @@ pub fn run(
             ]);
         }
         let log = fs::File::create(&log_path)?;
+        crate::manager::atomic_json(
+            &log_path.with_extension("identity.json"),
+            &json!({
+                "apk_storage_id": app.storage_id(), "backend": backend.id(),
+                "padbridge_version": env!("CARGO_PKG_VERSION"),
+                "framework_sha256": apk::digest(&runtime.join("framework.jar"))?
+            }),
+        )?;
         cmd.stdout(Stdio::from(log.try_clone()?))
             .stderr(Stdio::from(log));
         cmd.args(["--chdir", "/data", "--"]).args(backend.command(

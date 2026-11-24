@@ -1,9 +1,11 @@
+mod analyzer;
 mod apk;
 mod backends;
 mod bundles;
 mod dex;
 mod manager;
 mod media;
+mod native_elf;
 mod runtime;
 mod secure_media;
 
@@ -27,6 +29,22 @@ fn dispatch() -> Result<Value> {
         });
     let manager = manager::Manager::new(root)?;
     match action {
+        "analyze" => {
+            let split = args
+                .iter()
+                .position(|s| s == "--html")
+                .unwrap_or(args.len());
+            let html = if split < args.len() {
+                Some(arg(split + 1)?.as_str())
+            } else {
+                None
+            };
+            analyzer::analyze(
+                &manager,
+                &args[1..split].iter().map(PathBuf::from).collect::<Vec<_>>(),
+                html,
+            )
+        }
         "inspect" | "diagnose" => {
             let path = PathBuf::from(arg(1)?);
             let meta = apk::inspect(&path)?;

@@ -6,7 +6,7 @@ use std::{collections::BTreeSet, fs::File, io::Read, path::Path};
 use zip::ZipArchive;
 
 pub const MAX_APK: u64 = 512 * 1024 * 1024;
-pub const MAX_ENTRY: u64 = 64 * 1024 * 1024;
+pub const MAX_ENTRY: u64 = 128 * 1024 * 1024;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct App {
@@ -92,7 +92,7 @@ pub fn archive(path: &Path) -> Result<ZipArchive<File>> {
             entry.unix_mode().unwrap_or(0) & 0o170000 != 0o120000,
             "APK symlinks are not allowed"
         );
-        ensure!(entry.size() <= MAX_ENTRY, "APK entry exceeds 64 MiB limit");
+        ensure!(entry.size() <= MAX_ENTRY, "APK entry exceeds 128 MiB limit");
         total = total
             .checked_add(entry.size())
             .context("APK size overflow")?;

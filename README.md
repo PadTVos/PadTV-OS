@@ -1,7 +1,7 @@
-# PadTV 0.5 – Android Runtime
+# PadTV 0.6 – Native Compatibility
 
 Samostatná televizní distribuce založená na **Debianu 13**, pro PC a mini PC
-**amd64** připojené přes HDMI. Vydání systému: 0.5; balíčky: 0.5.0; PadBridge: 0.2.0 (experimentální).
+**amd64** připojené přes HDMI. Vydání systému: 0.6; balíčky: 0.6.0; PadBridge: 0.3.0 (experimentální).
 Rozhraní Liquid Glass vychází z dodaného návrhu a zachovává logo i pozadí.
 
 ## PadBridge v této verzi
@@ -9,15 +9,20 @@ Rozhraní Liquid Glass vychází z dodaného návrhu a zachovává logo i pozad�
 Vlastní experimentální překladová vrstva v Rustu spouští základní podepsaná APK
 přes DEX → JVM a vlastní Android API, bez Android systému. Ve Store zvolte
 **Ukázka PadBridge** pro vlastní testovací APK nebo **Instalovat APK** pro místní APK, více split APK nebo vybranou sadu `.apks`.
-Nově jsou ověřené Java/Kotlin DEX, XML layouty, Handler/Looper, SQLite,
-předvolby a místní služby/Binder. FFmpeg modul skutečně dekóduje nezabezpečené snímky;
-Android mediální API, ART a plný Android framework zůstávají nehotové.
+Nově je ověřené neupravené APK **Screen Test 4K 1.0.1 od LuoJuly**:
+vykreslování přes Canvas, barevné plochy, bitmapová šachovnice a ovládání šipkami.
+Waydroid byl během testu vypnutý. Store skutečně stahuje vlastní testovací APK
+z GitHub Releases a před instalací ověřuje hash a podpis. Jsou zapojené dodané
+ikony PadTV-V6 a odstraněné reklamní úvodní texty Store.
+PadBridge 0.3 přidává omezené x86-64 ELF/JNI, APKM a analyzátor JSON/HTML.
+Java/Kotlin, XML, Handler/Looper, SQLite a místní služby zůstávají zachované.
+ART, Bionic, WebView, Android mediální API a úplný Android framework jsou nehotové.
 V aplikaci lze spravovat oprávnění sítě a odinstalovat ji včetně volby zachování dat.
 YouTube TV a Netflix přes PadBridge zatím nejsou ověřené ani podporované;
 přehrávání médií, Bionic/ARM a DRM jsou další milníky. Waydroid zůstává oddělenou zálohou.
 
 [Samostatný PadBridge](https://github.com/PadTVos/PadBridge) ·
-[Architektura a stav implementace 0.2](PadBridge/docs/runtime-0.2.md) ·
+[Stav implementace 0.3](PadBridge/docs/runtime-0.3.md) ·
 [Podporované API](PadBridge/docs/api.md)
 
 Zdroj v adresáři `PadBridge/` je vydaná kopie samostatného projektu, aby šlo OS
@@ -32,7 +37,7 @@ sestavit z jednoho checkoutu. Export obou repozitářů vychází ze stejných s
 - Vypnutí, restart a uspání přes systemd-logind. Rozlišení s návratem po 15 sekundách bez potvrzení.
 - Grafický instalátor Calamares pro BIOS a UEFI.
 - Odinstalovatelný předinstalovaný YouTube jako webová aplikace, prohlížeč, soubory a Waydroid s instalací APK.
-- Store s webovými aplikacemi, Flathubem, Google Play a přehledem systémových balíčků Debian APT.
+- Store se skutečnými APK z GitHub Releases, webovými aplikacemi, Flathubem, Google Play a přehledem Debian APT.
 - YouTube pro Android TV a Netflix pro Android TV v katalogu; instalaci dokončuje uživatel v oficiálním Google Play.
 - Stejné rozhraní ve vývojovém náhledu Windows.
 
@@ -40,8 +45,11 @@ Skutečně provedené kontroly a zbývající zkoušky jsou v [protokolu ověře
 
 ## Vyzkoušení
 
-ISO: `dist/padtv-0.5.0-amd64.iso`; vedle něj je SHA-256.
-Pro celý systém ve Windows použijte zástupce **PadTV 0.5 Android Runtime – virtuální PC**:
+ISO: `dist/padtv-0.6.0-amd64.iso`; vedle něj je SHA-256.
+Veřejné testovací vydání je v [GitHub Releases](https://github.com/PadTVos/PadTV-OS/releases/tag/v0.6.0).
+Kvůli limitu velikosti obsahuje dvě části ISO a `Join-PadTV.ps1` pro jejich
+spojení a ověření. Místní ISO v `dist/` je již kompletní.
+Pro celý systém ve Windows použijte zástupce **PadTV 0.6 Native Compatibility – virtuální PC**:
 
 ```powershell
 .\.venv\Scripts\python.exe scripts/run-vm.py
@@ -152,5 +160,5 @@ přihlášení a přepínač `-Publish`. Lokální export není založení organ
 - [Stav ověření](docs/validation.md)
 - [Historické ověření 0.3.1](docs/validation-0.3.1.md)
 
-Pro sestavení 0.5 nainstalujte i [sestavovací závislosti PadBridge](PadBridge/README.md).
+Pro sestavení 0.6 nainstalujte i [sestavovací závislosti PadBridge](PadBridge/README.md).
 `build-iso.sh` sestavuje také samostatný balíček `padbridge`.
