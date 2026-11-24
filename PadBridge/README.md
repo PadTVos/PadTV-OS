@@ -1,14 +1,14 @@
-# PadBridge 0.1 — experimental Android compatibility for Linux
+# PadBridge 0.2 — experimental Android compatibility for Linux
 
-PadBridge installs **unmodified, signed standalone APKs** and executes a small
+PadBridge installs **unmodified, signed APKs and verified split APK sets** and executes a small
 subset of Android applications directly on Linux. Its package manager,
 supervisor, diagnostics and native rendering bridge are Rust. Java facades
 implement the supported Android API signatures. No Android OS, VM or Waydroid
-is started. This release accompanies **PadTV OS 0.4**; the two version numbers
+is started. This release accompanies **PadTV OS 0.5**; the two version numbers
 describe different projects.
 
-The first execution backend uses strict **Enjarify DEX 035 → JVM translation and
-OpenJDK 21**, not ART. Only the subset in [API compatibility](docs/api.md) is
+The first execution backend uses strict **Enjarify DEX → JVM translation and
+OpenJDK 21**, not ART. Only the subset in [0.2 implementation boundaries](docs/runtime-0.2.md) is
 implemented. It is not a general Android emulator and cannot currently run
 YouTube TV or Netflix. Android native `.so` files, ARM translation, Google Play
 Services, media playback and DRM are not implemented. See the
@@ -20,12 +20,15 @@ Services, media playback and DRM are not implemented. See the
 sudo apt-get install --no-install-recommends rustc cargo pkg-config \
   libsdl2-dev libsdl2-ttf-dev libsdl2-image-dev openjdk-21-jdk-headless \
   aapt apksigner libsmali-java android-framework-res enjarify bubblewrap \
-  fonts-dejavu-core python3 dpkg-dev
+  fonts-dejavu-core python3 dpkg-dev kotlin libxerial-sqlite-jdbc-java ffmpeg
 bash scripts/build.sh
 cargo test --workspace --locked
 python3 tests/integration.py
+python3 scripts/fetch-test-tools.py
+python3 tests/build_runtime_fixtures.py
+python3 tests/runtime05.py
 bash scripts/build-deb.sh
-sudo apt-get install ./build/padbridge_0.1.0_amd64.deb
+sudo apt-get install ./build/padbridge_0.2.0_amd64.deb
 ```
 
 Integration tests require a real Linux user namespace environment. They fail
@@ -34,6 +37,11 @@ isolation test. A chroot is often insufficient. For an uninstalled build set
 `PADBRIDGE_RUNTIME_DIR=$PWD/build/runtime` and use `target/release/padbridge`.
 
 ```sh
+padbridge backends
+padbridge install-set base.apk feature.apk
+padbridge inspect-set selected-bundle.apks
+padbridge media-probe unprotected-video.mkv
+padbridge media-decode unprotected-video.mkv
 padbridge inspect example.apk
 padbridge install example.apk
 padbridge permissions org.example.app '["android.permission.INTERNET"]'
@@ -49,7 +57,8 @@ snapshot for tests; it does **not** verify rendered pixels. `--restart-once`
 retries an abnormal process exit once; unsupported APIs do not restart-loop.
 
 - [Architecture, backend decision and milestones](docs/architecture.md)
-- [Actual API subset](docs/api.md)
+- [Current 0.2 API subset and remaining modules](docs/runtime-0.2.md)
+- [ART integration research](docs/art-0.2-research.md)
 - [Source study and license decisions](docs/research.md), [third-party notices](THIRD_PARTY.md)
 - [Sandbox and data model](docs/security.md)
 - [Secure Media Engine roadmap](docs/secure-media.md)

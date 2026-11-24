@@ -107,7 +107,7 @@ def build():
     for key in ('test','other'):
         path=OUT/(key+'.keystore')
         if not path.exists():run('keytool','-genkeypair','-keystore',str(path),'-storepass','testonly','-keypass','testonly','-alias','fixture','-keyalg','RSA','-keysize','2048','-validity','3650','-dname','CN=PadBridge Test Only')
-    variants=[('basic',1,'test',None),('update',2,'test',None),('wrong-signer',2,'other',None),
+    variants=[('basic',5,'test',None),('update',6,'test',None),('wrong-signer',6,'other',None),
         ('network',1,'test',NETWORK),('isolation',1,'test',ISOLATION),('crash',1,'test',CRASH),
         ('media',1,'test',MEDIA),('audio',1,'test',AUDIO),('native',1,'test',None),('tvonly',1,'test',None)]
     for name,version,key,body in variants:

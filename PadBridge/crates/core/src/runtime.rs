@@ -80,16 +80,23 @@ pub(crate) fn sandbox(network: bool) -> Result<Command> {
     Ok(cmd)
 }
 
-fn translate(version: &Path, runtime: &Path) -> Result<()> {
-    if version.join("classes.jar").exists() {
+pub(crate) fn translate(version: &Path, runtime: &Path) -> Result<()> {
+    let cache_version = format!(
+        "{}:{}:{}:{}",
+        env!("CARGO_PKG_VERSION"),
+        apk::digest(&runtime.join("translate.py"))?,
+        apk::digest(&runtime.join("resources.py"))?,
+        apk::digest(&runtime.join("framework.jar"))?
+    );
+    if version.join("classes.jar").exists()
+        && fs::read_to_string(version.join("cache-version")).unwrap_or_default() == cache_version
+    {
         return Ok(());
     }
     let stage = tempfile::tempdir_in(version)?;
     let mut cmd = sandbox(false)?;
     cmd.arg("--ro-bind").arg(runtime).arg("/runtime");
-    cmd.arg("--ro-bind")
-        .arg(version.join("original.apk"))
-        .arg("/input.apk");
+    cmd.arg("--ro-bind").arg(version).arg("/input");
     cmd.arg("--bind").arg(stage.path()).arg("/output");
     cmd.args([
         "--",
@@ -98,7 +105,7 @@ fn translate(version: &Path, runtime: &Path) -> Result<()> {
         "90",
         "/usr/bin/python3",
         "/runtime/translate.py",
-        "/input.apk",
+        "/input",
         "/output/classes.jar",
     ]);
     let output = cmd
@@ -124,28 +131,53 @@ fn translate(version: &Path, runtime: &Path) -> Result<()> {
         version.join("classes.jar.sha256"),
         apk::digest(&version.join("classes.jar"))?,
     )?;
+    fs::write(version.join("cache-version"), cache_version)?;
     Ok(())
 }
 
-pub fn run(manager: &Manager, package: &str, headless: bool, restart: bool) -> Result<Value> {
+pub fn run(
+    manager: &Manager,
+    package: &str,
+    headless: bool,
+    restart: bool,
+    backend_id: &str,
+) -> Result<Value> {
+    let backend = crate::backends::select(backend_id)?;
     let _guard = manager.operation_lock(package)?;
     let app = manager.get(package)?;
     let grants = manager.grants(package)?;
-    let version = manager.app_dir(package)?.join(&app.sha256);
+    let version = manager.app_dir(package)?.join(app.storage_id());
     ensure!(
         apk::digest(&version.join("original.apk"))? == app.sha256,
         "Installed APK integrity mismatch"
     );
     ensure!(!app.activity.is_empty(), "No launchable Activity found");
-    let diagnostic = dex::diagnose(&version.join("original.apk"))?;
+    let mut sources = vec![version.join("original.apk")];
+    for split in &app.splits {
+        ensure!(
+            !split.name.contains('/') && !split.name.contains('\\') && !split.name.contains(".."),
+            "Unsafe installed split name"
+        );
+        let path = version.join("splits").join(format!("{}.apk", split.name));
+        ensure!(
+            apk::digest(&path)? == split.sha256,
+            "Installed split integrity mismatch"
+        );
+        sources.push(path);
+    }
+    let diagnostic = dex::diagnose_set(&sources)?;
     ensure!(
-        diagnostic["eligible_for_trial"] == true,
+        diagnostic["dex_errors"]
+            .as_array()
+            .map(|v| v.is_empty())
+            .unwrap_or(false)
+            && diagnostic["native_abi_supported"] == true,
         "Unsupported APK: {diagnostic}"
     );
     let runtime = share()
         .canonicalize()
         .context("PadBridge runtime is not installed")?;
-    translate(&version, &runtime)?;
+    backend.prepare(&version, &runtime)?;
     ensure!(
         apk::digest(&version.join("classes.jar"))?
             == fs::read_to_string(version.join("classes.jar.sha256"))?,
@@ -197,21 +229,11 @@ pub fn run(manager: &Manager, package: &str, headless: bool, restart: bool) -> R
         let log = fs::File::create(&log_path)?;
         cmd.stdout(Stdio::from(log.try_clone()?))
             .stderr(Stdio::from(log));
-        cmd.args([
-            "--chdir",
-            "/data",
-            "--",
-            "/usr/bin/java",
-            "-Xmx384m",
-            "-XX:ActiveProcessorCount=2",
-            "-Djava.library.path=/runtime",
-            "-cp",
-            "/runtime/framework.jar:/app/classes.jar",
-            "org.padtv.bridge.Host",
+        cmd.args(["--chdir", "/data", "--"]).args(backend.command(
             &app.activity,
             &app.package,
-            if headless { "headless" } else { "wayland" },
-        ]);
+            headless,
+        )?);
         let status = cmd
             .status()
             .context("Mandatory bubblewrap sandbox could not start")?;

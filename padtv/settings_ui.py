@@ -4,6 +4,8 @@ import shutil
 from pathlib import Path
 import sys
 
+from . import RELEASE_NAME
+
 from PyQt6.QtCore import QEvent, QProcess, QTimer, Qt
 from PyQt6.QtGui import QColor, QPainter, QPixmap
 from PyQt6.QtWidgets import (QDialog, QFrame, QGridLayout, QHBoxLayout, QLabel,
@@ -370,7 +372,7 @@ class SettingsWindow(RemoteDialog):
                     self.row(("✓ " if mode == output["current"] else "") + mode, "display-set", output=output["name"], mode=mode)
             self.row("Obnovit obrazovky", "display-status")
         else:
-            self.note(f"PadTV 0.3 – System Core\nSestavení {data['version']} · Debian 13\nZařízení: {data['hostname']}\nJádro: {data['kernel']}")
+            self.note(f"{RELEASE_NAME}\nSestavení {data['version']} · Debian 13\nZařízení: {data['hostname']}\nJádro: {data['kernel']}")
             if data["vm"]:
                 self.note("Prostředí: virtuální PC (" + data["vm"] + ")")
             if data.get("persistent"):

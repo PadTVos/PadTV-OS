@@ -5,4 +5,5 @@ import android.graphics.Bitmap;
 public class ImageView extends View {
     public ImageView(Context context){super(context,3);}
     public void setImageBitmap(Bitmap bitmap){org.padtv.bridge.Native.image(bridgeId,bitmap==null?new byte[0]:bitmap.bridgeBytes());}
+    public void setImageResource(int id){try(java.io.InputStream in=context.getResources().openRawResource(id)){setImageBitmap(android.graphics.BitmapFactory.decodeStream(in));}catch(java.io.IOException e){throw new IllegalStateException(e);}}
 }

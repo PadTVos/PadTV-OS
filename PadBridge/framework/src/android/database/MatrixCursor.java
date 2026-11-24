@@ -1,0 +1,9 @@
+package android.database;
+public class MatrixCursor implements Cursor {
+    private final String[] columns;private final java.util.List<Object[]> rows=new java.util.ArrayList<Object[]>();private int position=-1;private boolean closed;
+    public MatrixCursor(String[] c){columns=c.clone();}public MatrixCursor(String[] c,int capacity){this(c);}public void addRow(Object[] row){if(row.length!=columns.length)throw new IllegalArgumentException("Column count mismatch");rows.add(row.clone());}
+    public int getCount(){return rows.size();}public int getColumnCount(){return columns.length;}public String[] getColumnNames(){return columns.clone();}public int getColumnIndex(String name){for(int i=0;i<columns.length;i++)if(columns[i].equalsIgnoreCase(name))return i;return -1;}public int getColumnIndexOrThrow(String name){int i=getColumnIndex(name);if(i<0)throw new IllegalArgumentException(name);return i;}
+    public int getPosition(){return position;}public boolean moveToFirst(){return moveToPosition(0);}public boolean moveToNext(){return moveToPosition(position+1);}public boolean moveToPosition(int p){position=Math.max(-1,Math.min(p,rows.size()));return position>=0&&position<rows.size();}
+    private Object value(int column){if(closed||position<0||position>=rows.size())throw new IllegalStateException("Cursor is closed or not positioned");return rows.get(position)[column];}
+    public String getString(int c){Object v=value(c);return v==null?null:v.toString();}public int getInt(int c){return (int)getLong(c);}public long getLong(int c){Object v=value(c);return v==null?0:v instanceof Number?((Number)v).longValue():Long.parseLong(v.toString());}public double getDouble(int c){Object v=value(c);return v==null?0:v instanceof Number?((Number)v).doubleValue():Double.parseDouble(v.toString());}public boolean isNull(int c){return value(c)==null;}public boolean isClosed(){return closed;}public void close(){closed=true;}
+}

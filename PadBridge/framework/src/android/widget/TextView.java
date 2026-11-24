@@ -7,4 +7,5 @@ public class TextView extends View {
     protected TextView(Context context,int kind){super(context,kind);}
     public void setText(CharSequence value){text=value==null?"":value;org.padtv.bridge.Native.text(bridgeId,text.toString());}
     public CharSequence getText(){return text;}
+    public void setText(int resource){setText(context.getText(resource));}
 }

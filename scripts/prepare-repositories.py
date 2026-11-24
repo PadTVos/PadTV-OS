@@ -50,9 +50,9 @@ def main():
         'PadTV-Updates':'Metadata systémových vydání PadTV.\n\n'
             '`python scripts/release-manifest.py obraz.iso --url https://SKUTECNY-HOST/vydani.iso --output release.json --sign-key FINGERPRINT`\n\n'
             'URL musí odkazovat na skutečně publikovaný soubor. Soukromé klíče zůstávají mimo Git. '
-            'Automatický aktualizátor a rollback OS nejsou součástí 0.4. '
+            'Automatický aktualizátor a rollback OS nejsou součástí 0.5. '
             'Žádné aktivní aktualizační kanály zatím nejsou zveřejněné.\n',
-        'PadTV-Website':'Dokumentace PadTV 0.4 – Android Compatibility.\n\n'
+        'PadTV-Website':'Dokumentace PadTV 0.5 – Android Runtime.\n\n'
             '- [Architektura](docs/system-core.md)\n- [Store a repozitáře](docs/github-and-store.md)\n'
             '- [Stav ověření](docs/validation.md)\n\n'
             'Doména a veřejný web dosud nejsou nasazené. Toto je zdrojová dokumentace pro další web.\n'}

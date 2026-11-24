@@ -3,7 +3,10 @@
 use crate::apk;
 use anyhow::{ensure, Context, Result};
 use serde_json::{json, Value};
-use std::{collections::BTreeSet, path::Path};
+use std::{
+    collections::BTreeSet,
+    path::{Path, PathBuf},
+};
 
 fn u32_at(data: &[u8], at: usize) -> Result<usize> {
     Ok(u32::from_le_bytes(data.get(at..at + 4).context("Truncated DEX")?.try_into()?) as usize)
@@ -14,8 +17,8 @@ pub fn types(data: &[u8]) -> Result<Vec<String>> {
         "Invalid DEX header"
     );
     ensure!(
-        &data[4..7] == b"035",
-        "DEX version unsupported by experimental backend (requires 035)"
+        [b"035", b"037", b"038", b"039", b"040"].contains(&data[4..7].try_into()?),
+        "Unsupported DEX version; 041 container format is not implemented"
     );
     ensure!(
         u32_at(data, 32)? == data.len() && u32_at(data, 40)? == 0x12345678,
@@ -64,8 +67,9 @@ pub fn types(data: &[u8]) -> Result<Vec<String>> {
         .collect()
 }
 pub fn diagnose(path: &Path) -> Result<Value> {
-    let mut zip = apk::archive(path)?;
-    let names: Vec<String> = zip.file_names().map(str::to_owned).collect();
+    diagnose_set(&[path.to_path_buf()])
+}
+pub fn diagnose_set(paths: &[PathBuf]) -> Result<Value> {
     let supported: Value = serde_json::from_str(include_str!("../../../api/compatibility.json"))?;
     let classes: BTreeSet<&str> = supported["classes"]
         .as_array()
@@ -74,54 +78,89 @@ pub fn diagnose(path: &Path) -> Result<Value> {
         .filter_map(Value::as_str)
         .collect();
     let mut missing = BTreeSet::new();
+    let mut defined = BTreeSet::new();
+    let mut versions = BTreeSet::new();
     let mut errors = vec![];
     let mut dex_count = 0;
-    for name in names
-        .iter()
-        .filter(|n| n.ends_with(".dex") && !n.contains('/'))
-    {
-        dex_count += 1;
-        match types(&apk::read_entry(&mut zip, name)?) {
-            Ok(values) => {
-                for t in values {
-                    let name = t
-                        .trim_start_matches('[')
-                        .trim_start_matches('L')
-                        .trim_end_matches(';')
-                        .replace('/', ".");
-                    if (name.starts_with("android.")
-                        || name.starts_with("androidx.")
-                        || name.starts_with("com.google.android.gms."))
-                        && !classes.contains(name.as_str())
-                    {
-                        missing.insert(name);
+    let mut libraries = vec![];
+    let mut native = vec![];
+    for path in paths {
+        let mut zip = apk::archive(path)?;
+        let names: Vec<String> = zip.file_names().map(str::to_owned).collect();
+        for name in names
+            .iter()
+            .filter(|n| n.ends_with(".dex") && !n.contains('/'))
+        {
+            dex_count += 1;
+            let data = apk::read_entry(&mut zip, name)?;
+            match types(&data) {
+                Ok(values) => {
+                    versions.insert(String::from_utf8_lossy(&data[4..7]).to_string());
+                    let count = u32_at(&data, 96)?;
+                    let offset = u32_at(&data, 100)?;
+                    ensure!(
+                        count <= 65536 && offset + count * 32 <= data.len(),
+                        "Invalid class definition table"
+                    );
+                    for i in 0..count {
+                        let value = values
+                            .get(u32_at(&data, offset + i * 32)?)
+                            .context("Invalid defined class index")?;
+                        let class = value
+                            .trim_start_matches('L')
+                            .trim_end_matches(';')
+                            .replace('/', ".");
+                        ensure!(
+                            defined.insert(class),
+                            "Duplicate class definition across DEX files or splits"
+                        );
+                    }
+                    for t in values {
+                        let name = t
+                            .trim_start_matches('[')
+                            .trim_start_matches('L')
+                            .trim_end_matches(';')
+                            .replace('/', ".");
+                        if (name.starts_with("android.")
+                            || name.starts_with("androidx.")
+                            || name.starts_with("com.google.android.gms."))
+                            && !classes.contains(name.as_str())
+                        {
+                            missing.insert(name);
+                        }
                     }
                 }
+                Err(error) => errors.push(format!("{name}: {error}")),
             }
-            Err(error) => errors.push(format!("{name}: {error}")),
         }
-    }
-    let native: Vec<&String> = names
-        .iter()
-        .filter(|n| n.starts_with("lib/") && n.ends_with(".so"))
-        .collect();
-    let mut libraries = vec![];
-    for name in &native {
-        let bytes = apk::read_entry(&mut zip, name)?;
-        let detail = match goblin::elf::Elf::parse(&bytes) {
-            Ok(elf) => json!({"path":name,"elf_machine":elf.header.e_machine,"is_64_bit":elf.is_64,
+        let found: Vec<&String> = names
+            .iter()
+            .filter(|n| n.starts_with("lib/") && n.ends_with(".so"))
+            .collect();
+        for name in &found {
+            let bytes = apk::read_entry(&mut zip, name)?;
+            let detail = match goblin::elf::Elf::parse(&bytes) {
+                Ok(elf) => {
+                    json!({"path":name,"elf_machine":elf.header.e_machine,"is_64_bit":elf.is_64,
                 "needed":elf.libraries,"unresolved_android_abi_dependencies":elf.libraries,
-                "error":"Android/Bionic native loader is not implemented; host glibc libraries cannot satisfy this ABI"}),
-            Err(error) => json!({"path":name,"error":format!("Invalid ELF: {error}")}),
-        };
-        libraries.push(detail);
+                "undefined_symbols":elf.dynsyms.iter().filter(|s|s.st_shndx==0 && s.st_name!=0).filter_map(|s|elf.dynstrtab.get_at(s.st_name)).take(4096).collect::<Vec<_>>(),
+                "architecture":match elf.header.e_machine {62=>"x86_64",183=>"aarch64",40=>"arm",_=>"unsupported"},
+                "error":"Android/Bionic native loader is not implemented; host glibc libraries cannot satisfy this ABI"})
+                }
+                Err(error) => json!({"path":name,"error":format!("Invalid ELF: {error}")}),
+            };
+            libraries.push(detail);
+        }
+        native.extend(found.into_iter().cloned());
     }
+    missing.retain(|name| !defined.contains(name));
     Ok(
         json!({"backend":"enjarify-openjdk","dex_files":dex_count,"unsupported_classes":missing,
-        "dex_errors":errors,"native_libraries":native,"native_details":libraries,"native_abi_supported":native.is_empty(),
+        "dex_versions":versions,"defined_classes":defined.len(),"dex_errors":errors,"native_libraries":native,"native_details":libraries,"native_abi_supported":native.is_empty(),
+        "google_play_services":missing.iter().any(|c|c.starts_with("com.google.android.gms.")),
         "drm":"No licensed MediaDrm provider; Widevine and protected video unavailable",
         "assessment":"Static class references only; method signatures, reflection, resources and behavior require execution tests",
-        "eligible_for_trial":missing.is_empty() && errors.is_empty() && native.is_empty()}),
+        "eligible_for_trial":dex_count>0 && missing.is_empty() && errors.is_empty() && native.is_empty()}),
     )
 }
 #[cfg(test)]

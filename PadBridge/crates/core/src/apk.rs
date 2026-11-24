@@ -21,6 +21,27 @@ pub struct App {
     pub abis: Vec<String>,
     pub icon: Option<String>,
     pub television: bool,
+    #[serde(default)]
+    pub split: Option<String>,
+    #[serde(default)]
+    pub splits: Vec<Split>,
+    #[serde(default)]
+    pub installation_id: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Split {
+    pub name: String,
+    pub sha256: String,
+}
+impl App {
+    pub fn storage_id(&self) -> &str {
+        if self.installation_id.is_empty() {
+            &self.sha256
+        } else {
+            &self.installation_id
+        }
+    }
 }
 
 pub fn valid_package(value: &str) -> bool {
@@ -80,8 +101,10 @@ pub fn archive(path: &Path) -> Result<ZipArchive<File>> {
             "Expanded APK exceeds 1 GiB limit"
         );
     }
-    ensure!(names.contains("AndroidManifest.xml") && names.contains("classes.dex"),
-        "A standalone base APK with manifest and classes.dex is required; split APK sets are unsupported");
+    ensure!(
+        names.contains("AndroidManifest.xml"),
+        "AndroidManifest.xml is required"
+    );
     Ok(zip)
 }
 
@@ -157,10 +180,18 @@ pub fn inspect(path: &Path) -> Result<App> {
         .lines()
         .find(|l| l.starts_with("package:"))
         .context("Missing package")?;
-    ensure!(
-        field(package_line, "split").is_none(),
-        "Split APK installation is not supported"
-    );
+    let split = field(package_line, "split");
+    if let Some(ref name) = split {
+        ensure!(
+            !name.is_empty()
+                && name.len() <= 160
+                && name
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'.')
+                && !name.contains(".."),
+            "Invalid split identifier"
+        );
+    }
     let package = field(package_line, "name").context("Missing package name")?;
     ensure!(valid_package(&package), "Invalid package identifier");
     let activity_line = badging
@@ -221,6 +252,9 @@ pub fn inspect(path: &Path) -> Result<App> {
         icon,
         television: badging.contains("android.software.leanback")
             || badging.contains("leanback-launchable-activity"),
+        split,
+        splits: vec![],
+        installation_id: String::new(),
     })
 }
 

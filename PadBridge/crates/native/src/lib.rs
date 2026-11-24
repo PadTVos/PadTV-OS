@@ -17,6 +17,9 @@ use std::sync::{Mutex, OnceLock};
 #[derive(Clone, Default, Serialize)]
 struct Node {
     kind: i32,
+    layout: i32,
+    width: i32,
+    height: i32,
     text: String,
     children: Vec<usize>,
     #[serde(skip)]
@@ -60,9 +63,48 @@ pub extern "system" fn Java_org_padtv_bridge_Native_create(
     }
     s.nodes.push(Node {
         kind,
+        layout: 1,
+        width: -2,
+        height: -2,
         ..Node::default()
     });
     (s.nodes.len() - 1) as jint
+}
+#[no_mangle]
+pub extern "system" fn Java_org_padtv_bridge_Native_layout(
+    mut env: JNIEnv,
+    _: JClass,
+    id: jint,
+    layout: jint,
+) {
+    if !(0..=2).contains(&layout) {
+        fail(&mut env, "Unsupported layout mode");
+        return;
+    }
+    if let Some(n) = scene().lock().unwrap().nodes.get_mut(id as usize) {
+        n.layout = layout;
+    } else {
+        fail(&mut env, "Invalid view");
+    }
+}
+#[no_mangle]
+pub extern "system" fn Java_org_padtv_bridge_Native_size(
+    mut env: JNIEnv,
+    _: JClass,
+    id: jint,
+    width: jint,
+    height: jint,
+) {
+    if !(-2..=16384).contains(&width) || !(-2..=16384).contains(&height) {
+        fail(&mut env, "Invalid view dimensions");
+        return;
+    }
+    if let Some(n) = scene().lock().unwrap().nodes.get_mut(id as usize) {
+        n.width = width;
+        n.height = height;
+    } else {
+        fail(&mut env, "Invalid view");
+    }
 }
 #[no_mangle]
 pub extern "system" fn Java_org_padtv_bridge_Native_text(
@@ -156,6 +198,7 @@ pub extern "system" fn Java_org_padtv_bridge_Native_snapshot(
         }
     }
 }
+#[cfg(test)]
 fn leaves(s: &Scene, id: usize, result: &mut Vec<usize>, depth: usize) -> Result<(), String> {
     if depth > 32 || result.len() > 1000 {
         return Err("View hierarchy exceeds limit or contains a cycle".into());
@@ -177,8 +220,128 @@ fn key(key: Keycode) -> Option<i32> {
         Keycode::Left => Some(21),
         Keycode::Right => Some(22),
         Keycode::Return | Keycode::Space => Some(23),
+        Keycode::Escape | Keycode::Backspace => Some(4),
         _ => None,
     }
+}
+fn measure(s: &Scene, id: usize, horizontal: bool, depth: usize) -> Result<u32, String> {
+    if depth > 32 {
+        return Err("Layout cycle or nesting limit".into());
+    }
+    let n = s.nodes.get(id).ok_or("Invalid layout node")?;
+    let explicit = if horizontal { n.width } else { n.height };
+    if explicit >= 0 {
+        return Ok(explicit as u32);
+    }
+    if n.kind != 0 {
+        return Ok(if horizontal {
+            240
+        } else if n.kind == 3 {
+            180
+        } else {
+            70
+        });
+    }
+    let mut size = 0u32;
+    for child in &n.children {
+        let value = measure(s, *child, horizontal, depth + 1)?;
+        if (horizontal && n.layout == 0) || (!horizontal && n.layout == 1) {
+            size = size.saturating_add(value + 14);
+        } else {
+            size = size.max(value);
+        }
+    }
+    Ok(size.min(16384))
+}
+fn arrange(
+    s: &Scene,
+    id: usize,
+    area: Rect,
+    result: &mut Vec<(usize, Rect)>,
+    depth: usize,
+) -> Result<(), String> {
+    if depth > 32 || result.len() > 1000 {
+        return Err("Layout cycle or view limit".into());
+    }
+    let n = s.nodes.get(id).ok_or("Invalid layout node")?;
+    if n.kind != 0 {
+        result.push((id, area));
+    }
+    let horizontal = n.layout == 0;
+    let available = if horizontal {
+        area.width()
+    } else {
+        area.height()
+    };
+    let mut fixed = 0;
+    let mut fill = 0;
+    for child in &n.children {
+        let c = &s.nodes[*child];
+        let length = if horizontal { c.width } else { c.height };
+        if length == -1 {
+            fill += 1;
+        } else {
+            fixed += measure(s, *child, horizontal, depth + 1)? + 14;
+        }
+    }
+    let shared = available.saturating_sub(fixed) / fill.max(1);
+    let mut offset = 0i32;
+    for child in &n.children {
+        let c = &s.nodes[*child];
+        let dimension = |length: i32, available: u32, natural: u32| {
+            if length >= 0 {
+                length as u32
+            } else if length == -1 {
+                available
+            } else {
+                natural.min(available)
+            }
+        };
+        let width = dimension(
+            c.width,
+            if horizontal && n.layout != 2 && c.width == -1 {
+                shared.max(1)
+            } else {
+                area.width()
+            },
+            if horizontal {
+                measure(s, *child, true, depth + 1)?
+            } else {
+                area.width()
+            },
+        );
+        let height = dimension(
+            c.height,
+            if !horizontal && n.layout != 2 && c.height == -1 {
+                shared.max(1)
+            } else {
+                area.height()
+            },
+            measure(s, *child, false, depth + 1)?,
+        );
+        if width > 0 && height > 0 {
+            arrange(
+                s,
+                *child,
+                Rect::new(
+                    area.x() + if horizontal { offset } else { 0 },
+                    area.y() + if n.layout == 1 { offset } else { 0 },
+                    width,
+                    height,
+                ),
+                result,
+                depth + 1,
+            )?;
+        }
+        if n.layout != 2 {
+            offset += if horizontal {
+                width as i32 + 14
+            } else {
+                height as i32 + 14
+            };
+        }
+    }
+    Ok(())
 }
 fn run(env: &mut JNIEnv) -> Result<(), String> {
     let sdl = sdl2::init()?;
@@ -191,23 +354,26 @@ fn run(env: &mut JNIEnv) -> Result<(), String> {
         .resizable()
         .build()
         .map_err(|e| e.to_string())?;
-    let mut canvas = window
-        .into_canvas()
-        .software()
-        .build()
-        .map_err(|e| e.to_string())?;
+    let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
+    eprintln!("PADBRIDGE_RENDERER={:?}", canvas.info());
     let texture_creator = canvas.texture_creator();
     let font = ttf.load_font("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 25)?;
     let mut events = sdl.event_pump()?;
     let mut targets: Vec<(usize, Rect)> = vec![];
     'running: loop {
+        env.call_static_method("org/padtv/bridge/Host", "pump", "()V", &[])
+            .map_err(|e| e.to_string())?;
+        if env
+            .call_static_method("org/padtv/bridge/Host", "isFinished", "()Z", &[])
+            .map_err(|e| e.to_string())?
+            .z()
+            .map_err(|e| e.to_string())?
+        {
+            break;
+        }
         for event in events.poll_iter() {
             match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
-                    keycode: Some(Keycode::Escape),
-                    ..
-                } => break 'running,
+                Event::Quit { .. } => break 'running,
                 Event::KeyDown {
                     keycode: Some(k), ..
                 } => {
@@ -242,16 +408,24 @@ fn run(env: &mut JNIEnv) -> Result<(), String> {
         }
         let state = scene().lock().unwrap().clone();
         let mut items = vec![];
-        leaves(&state, state.root, &mut items, 0)?;
-        let (width, _) = canvas.output_size()?;
-        let mut y = 36;
+        let (width, height) = canvas.output_size()?;
+        arrange(
+            &state,
+            state.root,
+            Rect::new(
+                40,
+                36,
+                width.saturating_sub(80).max(1),
+                height.saturating_sub(72).max(1),
+            ),
+            &mut items,
+            0,
+        )?;
         targets.clear();
         canvas.set_draw_color(Color::RGB(13, 28, 29));
         canvas.clear();
-        for id in items {
+        for (id, area) in items {
             let node = &state.nodes[id];
-            let height = if node.kind == 3 { 180 } else { 70 };
-            let area = Rect::new(40, y, width.saturating_sub(80).max(1), height);
             if node.kind == 2 {
                 canvas.set_draw_color(if id == state.focus {
                     Color::RGB(88, 57, 180)
@@ -264,13 +438,14 @@ fn run(env: &mut JNIEnv) -> Result<(), String> {
             if node.kind == 3 && !node.image.is_empty() {
                 let texture = texture_creator.load_texture_bytes(&node.image)?;
                 let q = texture.query();
-                let scale = (180.0 / q.height as f64).min(area.width() as f64 / q.width as f64);
+                let scale = (area.height() as f64 / q.height as f64)
+                    .min(area.width() as f64 / q.width as f64);
                 canvas.copy(
                     &texture,
                     None,
                     Rect::new(
-                        50,
-                        y,
+                        area.x(),
+                        area.y(),
                         (q.width as f64 * scale) as u32,
                         (q.height as f64 * scale) as u32,
                     ),
@@ -286,10 +461,14 @@ fn run(env: &mut JNIEnv) -> Result<(), String> {
                 canvas.copy(
                     &texture,
                     None,
-                    Rect::new(54, y + 14, surface.width(), surface.height()),
+                    Rect::new(
+                        area.x() + 14,
+                        area.y() + 14,
+                        surface.width(),
+                        surface.height(),
+                    ),
                 )?;
             }
-            y += height as i32 + 14;
         }
         canvas.present();
         std::thread::sleep(std::time::Duration::from_millis(16));

@@ -18,3 +18,21 @@ license texts for Debian packages are available from Debian source repositories;
 when distributing modified dependencies, publish the corresponding modified
 source and satisfy the applicable license. No proprietary Google/Netflix APK,
 DRM module, signing key, certificate or Google Play binary is in this repository.
+
+## Added in 0.2
+
+- Xerial SQLite JDBC and SQLite, supplied by Debian: see
+  `/usr/share/doc/libxerial-sqlite-jdbc-java/copyright` and SQLite notices.
+- FFmpeg, supplied unmodified by Debian: LGPL/GPL components and enabled build
+  options retain `/usr/share/doc/ffmpeg/copyright` and `ffmpeg -L` notices.
+- Test-only R8/D8 8.3.37: BSD-style upstream license,
+  https://r8.googlesource.com/r8/+/refs/heads/main/LICENSE . The pinned download
+  checksum and Google Maven URL are in `scripts/fetch-test-tools.py`.
+- Test-only Android API stubs 4.1.1.4: published Google Android Maven artifact;
+  upstream Android component licenses. Not included in runtime or ISO.
+- Test-only Kotlin 1.3.31 compiler/stdlib: Debian package, Apache-2.0 and component
+  notices in `/usr/share/doc/kotlin/copyright`. Its bytecode is only in private
+  generated test APKs, not the distributed demo or source repository.
+- TV Bro and Launch on Boot were obtained from upstream GitHub release assets
+  for local compatibility testing. They are not redistributed or bundled. Their
+  URLs, versions and APK SHA-256 values are retained in the compatibility record.

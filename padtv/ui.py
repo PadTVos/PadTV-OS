@@ -881,7 +881,7 @@ class HomeWindow(PadBridgeMixin, StoreMixin, QWidget):
             label(p,(100,250,1300,38),'Objevte nové aplikace',27,WHITE,True)
             label(p,(100,289,1300,28),'Rozšiřte svůj PadTV o zábavu, hudbu a další možnosti.',18,QColor('#d6dfdf'))
         if self.preview:
-            label(p, (72,860,700,24), 'Vývojový náhled · PadTV 0.3 System Core', 12, QColor(230,245,245,100))
+            label(p, (72,860,700,24), f'Vývojový náhled · {RELEASE_NAME}', 12, QColor(230,245,245,100))
         if self.notice:
             rounded(p, (200, 597, 1200, 67), QColor(26, 25, 48, 245), 20, MINT)
             label(p, (225, 597, 1150, 67), self.notice, 17, WHITE, False, Qt.AlignmentFlag.AlignCenter)

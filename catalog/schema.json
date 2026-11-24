@@ -73,6 +73,10 @@
             "type": "string",
             "maxLength": 2000
           },
+          "compatibility": {
+            "type": "string",
+            "maxLength": 2000
+          },
           "symbol": {
             "type": "string"
           },

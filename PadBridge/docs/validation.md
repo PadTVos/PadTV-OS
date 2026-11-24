@@ -1,3 +1,5 @@
+> Historical 0.1 baseline below. Current implementation: [0.2 boundaries](runtime-0.2.md); current test evidence: [PadTV 0.5 validation](https://github.com/PadTVos/PadTV-OS/blob/main/docs/validation-0.5.md).
+
 # Verification record — PadBridge 0.1, PadTV 0.4
 
 Tests run 2026-11-24 on Debian 13 amd64. Linux build uses Debian rustc 1.85.1,

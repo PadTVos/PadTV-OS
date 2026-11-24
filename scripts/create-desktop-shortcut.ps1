@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
 $padtvRoot = Split-Path -Parent $PSScriptRoot
 $padtvPython = Join-Path $padtvRoot '.venv\Scripts\pythonw.exe'
 $padtvIcon = Join-Path $padtvRoot 'assets\padtv-020.ico'

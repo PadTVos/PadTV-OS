@@ -1,3 +1,5 @@
+> Historical 0.1 baseline below. Current implementation: [0.2 boundaries](runtime-0.2.md); current test evidence: [PadTV 0.5 validation](https://github.com/PadTVos/PadTV-OS/blob/main/docs/validation-0.5.md).
+
 # Implemented API surface
 
 The machine-readable class registry is `api/compatibility.json`. Diagnostic

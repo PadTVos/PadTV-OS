@@ -56,7 +56,9 @@ impl Manager {
         ensure!(
             app.package == package
                 && app.sha256.len() == 64
-                && app.sha256.bytes().all(|b| b.is_ascii_hexdigit()),
+                && app.sha256.bytes().all(|b| b.is_ascii_hexdigit())
+                && app.storage_id().len() == 64
+                && app.storage_id().bytes().all(|b| b.is_ascii_hexdigit()),
             "Invalid installed metadata"
         );
         Ok(app)
@@ -86,13 +88,18 @@ impl Manager {
         Ok(f)
     }
     pub fn install(&self, source: &Path) -> Result<Value> {
+        self.install_set(&[source.to_path_buf()])
+    }
+    pub fn install_set(&self, sources: &[PathBuf]) -> Result<Value> {
+        let bundle = crate::bundles::Bundle::load(sources, &self.root)?;
+        let source = &bundle.paths[0];
         let mut copy = tempfile::NamedTempFile::new_in(&self.root)?;
         ensure!(
             source.metadata()?.is_file() && source.metadata()?.len() <= apk::MAX_APK,
             "Invalid APK size"
         );
         std::io::copy(&mut File::open(source)?.take(apk::MAX_APK + 1), &mut copy)?;
-        let app = apk::inspect(copy.path())?;
+        let app = bundle.app;
         let _guard = self.operation_lock(&app.package)?;
         if self.app_dir(&app.package)?.join("current.json").exists() {
             let old = self
@@ -107,16 +114,26 @@ impl Manager {
                 "APK downgrade is not allowed"
             );
             ensure!(
-                app.version_code != old.version_code || app.sha256 == old.sha256,
+                app.version_code != old.version_code || app.storage_id() == old.storage_id(),
                 "Different APK requires a higher versionCode"
             );
         }
         let folder = self.app_dir(&app.package)?;
         fs::create_dir_all(&folder)?;
-        let version = folder.join(&app.sha256);
+        let version = folder.join(app.storage_id());
         if !version.exists() {
             let stage = tempfile::tempdir_in(&folder)?;
             fs::copy(copy.path(), stage.path().join("original.apk"))?;
+            fs::create_dir_all(stage.path().join("splits"))?;
+            for (split, path) in app.splits.iter().zip(bundle.paths.iter().skip(1)) {
+                fs::copy(
+                    path,
+                    stage
+                        .path()
+                        .join("splits")
+                        .join(format!("{}.apk", split.name)),
+                )?;
+            }
             let mut zip = apk::archive(copy.path())?;
             if let Some(ref name) = app.icon {
                 let icon = apk::read_entry(&mut zip, name)?;
