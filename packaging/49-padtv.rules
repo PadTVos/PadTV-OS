@@ -1,0 +1,15 @@
+// Only the active local TV session may control its network connections.
+polkit.addRule(function(action, subject) {
+    if (subject.user != "padtv" || !subject.isInGroup("padtv")) return;
+    var allowed = [
+        "org.freedesktop.NetworkManager.network-control",
+        "org.freedesktop.NetworkManager.enable-disable-wifi",
+        "org.freedesktop.NetworkManager.wifi.scan",
+        "org.freedesktop.NetworkManager.settings.modify.own"
+    ];
+    if (allowed.indexOf(action.id) >= 0 && polkit.spawn(["/usr/lib/padtv/padtv-active-session"]).trim() == "yes") return polkit.Result.YES;
+    // This helper has fixed operations and accepts no user-supplied commands.
+    if (action.id == "org.freedesktop.policykit.exec" &&
+        action.lookup("program") == "/usr/lib/padtv/padtv-android-init" &&
+        polkit.spawn(["/usr/lib/padtv/padtv-active-session"]).trim() == "yes") return polkit.Result.YES;
+});

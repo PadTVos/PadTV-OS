@@ -1,0 +1,6 @@
+{
+  "PasswordManagerEnabled": false,
+  "AutofillCreditCardEnabled": false,
+  "DefaultBrowserSettingEnabled": false,
+  "BrowserGuestModeEnabled": false
+}

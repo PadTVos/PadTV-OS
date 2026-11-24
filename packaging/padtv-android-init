@@ -1,0 +1,35 @@
+#!/bin/sh
+set -eu
+if [ "$(id -u)" -ne 0 ]; then
+    echo 'Příprava Androidu vyžaduje oprávnění správce.' >&2
+    exit 1
+fi
+# Only two named image types; no caller-controlled commands or download URLs.
+padtv_android_type=${1:-VANILLA}
+if [ "$#" -gt 1 ]; then exit 2; fi
+case "$padtv_android_type" in VANILLA|GAPPS) ;; *) echo 'Neplatný typ Androidu.' >&2; exit 2 ;; esac
+# Waydroid loads binder with all three required device nodes. Preloading the
+# Debian module without parameters would create only /dev/binder.
+waydroid init -f -s "$padtv_android_type" -c https://ota.waydro.id/system -v https://ota.waydro.id/vendor
+# Our default VM display has no 3D acceleration. Use Waydroid's documented
+# software renderer in VMs; physical GPUs retain automatic hardware selection.
+if systemd-detect-virt --vm --quiet; then
+    /usr/bin/python3 - <<'PY'
+from configparser import ConfigParser
+from pathlib import Path
+path = Path('/var/lib/waydroid/waydroid.cfg')
+config = ConfigParser()
+config.read(path)
+if not config.has_section('properties'):
+    config.add_section('properties')
+config.set('properties', 'ro.hardware.gralloc', 'default')
+config.set('properties', 'ro.hardware.egl', 'swiftshader')
+with path.open('w') as stream:
+    config.write(stream)
+PY
+fi
+install -d -m 755 /var/lib/waydroid/overlay/system/etc/permissions
+install -m 644 /usr/share/padtv/android/padtv-tv.xml /var/lib/waydroid/overlay/system/etc/permissions/padtv-tv.xml
+# Enable Leanback activity discovery; apps themselves remain normal /data/app installs.
+waydroid upgrade -o
+systemctl enable --now waydroid-container.service

@@ -1,0 +1,12 @@
+[Unit]
+Description=PadTV Android user session
+Requires=padtv-android-compositor.service
+After=padtv-android-compositor.service
+PartOf=padtv-android-compositor.service
+
+[Service]
+Type=simple
+Environment=WAYLAND_DISPLAY=padtv-android
+ExecStart=/usr/bin/waydroid session start
+ExecStop=/usr/bin/waydroid session stop
+TimeoutStopSec=20

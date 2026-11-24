@@ -1,0 +1,20 @@
+#!/usr/bin/python3
+"""Fixed installer entry point. The caller cannot choose an executable or config."""
+import os
+from pathlib import Path
+import re
+import stat
+import sys
+
+if os.geteuid() != 0 or not Path('/run/live/medium/live/filesystem.squashfs').is_file():
+    sys.exit('Instalátor lze spustit pouze z Live systému PadTV.')
+uid = int(os.environ.get('PKEXEC_UID', '-1'))
+if uid < 0 or len(sys.argv) != 2 or not re.fullmatch(r'wayland-[0-9]+', sys.argv[1]):
+    sys.exit('Chybí platná místní grafická relace.')
+runtime = Path('/run/user')/str(uid)
+socket = runtime/sys.argv[1]
+if runtime.stat().st_uid != uid or socket.stat().st_uid != uid or not stat.S_ISSOCK(socket.stat().st_mode):
+    sys.exit('Neplatný grafický socket.')
+os.execve('/usr/bin/calamares', ['calamares'],
+          {'PATH': '/usr/sbin:/usr/bin:/sbin:/bin', 'HOME': '/root', 'LANG': 'cs_CZ.UTF-8',
+           'QT_QPA_PLATFORM': 'wayland', 'XDG_RUNTIME_DIR': str(runtime), 'WAYLAND_DISPLAY': socket.name})

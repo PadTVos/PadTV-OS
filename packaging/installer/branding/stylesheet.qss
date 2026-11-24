@@ -1,0 +1,4 @@
+/* TV auto-login is owned by padtv.service, not Calamares' administrator user. */
+QCheckBox#checkBoxDoAutoLogin { qproperty-visible: false; max-height: 0px; }
+QLabel#username_label_2 { qproperty-text: "Jméno účtu správce pro údržbu systému:"; }
+QLabel#password_label_2 { qproperty-text: "Heslo správce. Při běžném startu PadTV se nezadává."; }

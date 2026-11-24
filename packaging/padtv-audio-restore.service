@@ -1,0 +1,10 @@
+[Unit]
+Description=Restore PadTV audio preferences
+After=pipewire-pulse.service wireplumber.service
+Wants=pipewire-pulse.service wireplumber.service
+
+[Service]
+Type=oneshot
+Environment=PYTHONPATH=/usr/share/padtv
+ExecStart=/usr/bin/python3 -m padtv.system --restore-audio
+TimeoutStartSec=50

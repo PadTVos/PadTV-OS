@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+if [ "$1" = remove ]; then
+    for padtv_file in /usr/lib/os-release /etc/os-release; do
+        if [ -L "$padtv_file" ]; then rm -- "$padtv_file"; fi
+        dpkg-divert --package padtv-core --remove --rename --divert "$padtv_file.debian" "$padtv_file"
+    done
+fi

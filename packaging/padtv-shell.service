@@ -1,0 +1,16 @@
+[Unit]
+Description=PadTV television shell
+PartOf=padtv-session.target
+After=graphical-session-pre.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/padtv
+Restart=always
+RestartSec=2
+Environment=QT_QPA_PLATFORM=wayland
+Environment=PADTV_MANAGED_SESSION=1
+
+[Install]
+WantedBy=padtv-session.target

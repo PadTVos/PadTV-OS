@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+# Run after bootloader generation; keep the image's generated boot binaries.
+for path in boot/grub/grub.cfg isolinux/menu.cfg isolinux/live.cfg; do
+    install -m 644 "config/includes.binary/$path" "binary/$path"
+done

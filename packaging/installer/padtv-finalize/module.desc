@@ -1,0 +1,5 @@
+type: job
+name: padtv-finalize
+interface: python
+script: main.py
+requiredModules: [ mount ]

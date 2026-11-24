@@ -1,0 +1,8 @@
+#!/bin/sh
+set -e
+if [ "$1" = configure ]; then
+    update-alternatives --remove x-session-manager /usr/bin/padtv-session || true
+    systemctl disable lightdm.service greetd.service 2>/dev/null || true
+    systemctl enable --force padtv.service
+    systemctl daemon-reload || true
+fi

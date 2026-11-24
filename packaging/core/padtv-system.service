@@ -1,0 +1,26 @@
+[Unit]
+Description=PadTV System Core API v1
+Requires=dbus.service
+After=dbus.service polkit.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=dbus
+BusName=org.padtv.System1
+Environment=PYTHONPATH=/usr/lib/padtv-core
+ExecStart=/usr/bin/python3 -m padtv_core.server
+Restart=always
+RestartSec=2
+StateDirectory=padtv
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

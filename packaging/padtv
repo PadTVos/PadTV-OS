@@ -1,0 +1,3 @@
+#!/bin/sh
+export PYTHONPATH="/usr/share/padtv:/usr/lib/padtv-core${PYTHONPATH:+:$PYTHONPATH}"
+exec /usr/bin/python3 -m padtv "$@"

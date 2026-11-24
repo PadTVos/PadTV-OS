@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+# A dedicated TV account, with local autologin but no password-based remote login.
+getent group padtv >/dev/null || addgroup --system padtv
+if ! id padtv >/dev/null 2>&1; then
+    adduser --disabled-password --ingroup padtv --gecos 'PadTV' padtv
+fi
+for padtv_group in padtv audio video render netdev bluetooth; do
+    if getent group "$padtv_group" >/dev/null; then
+        adduser padtv "$padtv_group"
+    fi
+done

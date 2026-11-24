@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=PadTV
+Description=PadTV Czech television startup
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/padtv
+ScriptFile=/usr/share/plymouth/themes/padtv/padtv.script

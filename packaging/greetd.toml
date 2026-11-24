@@ -1,0 +1,12 @@
+[terminal]
+vt = 7
+switch = true
+[general]
+source_profile = false
+runfile = "/run/padtv-session/greetd.run"
+[default_session]
+command = "/usr/bin/systemctl --no-block restart padtv.service"
+user = "root"
+[initial_session]
+command = "/usr/bin/padtv-session"
+user = "padtv"

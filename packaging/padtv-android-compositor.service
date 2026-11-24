@@ -1,0 +1,9 @@
+[Unit]
+Description=PadTV Android display
+PartOf=padtv-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/padtv/padtv-android-display
+ExecStopPost=-/usr/bin/waydroid session stop
+TimeoutStopSec=15

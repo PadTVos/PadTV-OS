@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+# Separate Android surface on current and legacy sessions.
+if [ -n "${WAYLAND_DISPLAY:-}" ]; then
+    exec weston --backend=wayland --display="$WAYLAND_DISPLAY" --socket=padtv-android --idle-time=0 --shell=kiosk-shell.so --no-config --fullscreen
+fi
+exec weston --backend=x11 --socket=padtv-android --idle-time=0 --shell=kiosk-shell.so --no-config --width=1920 --height=1080

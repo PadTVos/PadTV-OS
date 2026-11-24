@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+install -d /var/lib/padtv /var/lib/waydroid /var/lib/bluetooth /var/lib/NetworkManager /etc/NetworkManager/system-connections
+systemctl disable lightdm greetd 2>/dev/null || true
+systemctl enable --force padtv.service padtv-system.service NetworkManager bluetooth padtv-account.service
+systemctl set-default graphical.target
+printf 'PadTV 0.3 – System Core\nDebian 13 (Trixie), build 0.3.3\n' > /etc/padtv-release
+printf 'PadTV 0.3 – System Core\n' > /etc/issue
+plymouth-set-default-theme padtv
+update-initramfs -u -k all

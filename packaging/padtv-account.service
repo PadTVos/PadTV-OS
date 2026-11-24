@@ -1,0 +1,12 @@
+[Unit]
+Description=Prepare the PadTV local television account
+After=live-config.service
+Before=lightdm.service display-manager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/padtv/padtv-account
+RemainAfterExit=yes
+
+[Install]
+WantedBy=graphical.target

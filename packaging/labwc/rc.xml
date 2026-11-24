@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<labwc_config>
+  <core><decoration>server</decoration></core>
+  <focus><followMouse>no</followMouse></focus>
+  <keyboard>
+    <keybind key="W-Home"><action name="Execute" command="wlrctl toplevel focus app_id:padtv"/></keybind>
+    <keybind key="A-Tab"><action name="NextWindow"/></keybind>
+    <keybind key="A-F4"><action name="Close"/></keybind>
+    <keybind key="XF86AudioRaiseVolume"><action name="Execute" command="padtv-volume up"/></keybind>
+    <keybind key="XF86AudioLowerVolume"><action name="Execute" command="padtv-volume down"/></keybind>
+    <keybind key="XF86AudioMute"><action name="Execute" command="padtv-volume mute"/></keybind>
+  </keyboard>
+  <mouse><context name="Client"><mousebind button="Left" action="Press"><action name="Focus"/><action name="Raise"/></mousebind></context></mouse>
+  <windowRules>
+    <windowRule identifier="*" type="normal" serverDecoration="no"><action name="Maximize"/></windowRule>
+  </windowRules>
+</labwc_config>

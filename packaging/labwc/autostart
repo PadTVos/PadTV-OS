@@ -1,0 +1,7 @@
+#!/bin/sh
+dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE QT_QPA_PLATFORM
+systemctl --user import-environment WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE QT_QPA_PLATFORM
+xdg-user-dirs-update
+systemctl --user reset-failed padtv-shell.service
+systemctl --user start --no-block padtv-session.target padtv-audio-restore.service
+/usr/bin/padtv-system-settings --restore-display

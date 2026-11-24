@@ -1,0 +1,5 @@
+polkit.addRule(function(action, subject) {
+    if (subject.user != "padtv" || !subject.isInGroup("padtv")) return;
+    if (action.id == "org.padtv.system.power" || action.id == "org.padtv.system.services")
+        if (polkit.spawn(["/usr/lib/padtv/padtv-active-session"]).trim() == "yes") return polkit.Result.YES;
+});

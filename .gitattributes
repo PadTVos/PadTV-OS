@@ -1,0 +1,8 @@
+* text=auto eol=lf
+*.py text eol=lf
+*.sh text eol=lf
+*.xml text eol=lf
+*.desktop text eol=lf
+*.conf text eol=lf
+*.chroot text eol=lf
+live/auto/config text eol=lf

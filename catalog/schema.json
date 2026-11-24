@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "version",
+    "apps"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "version": {
+      "type": "string"
+    },
+    "apps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "kind",
+          "target",
+          "source",
+          "category",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.-]{0,127}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "kind": {
+            "enum": [
+              "web",
+              "flatpak",
+              "apt",
+              "android"
+            ]
+          },
+          "target": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "enum": [
+              "web",
+              "flathub",
+              "apt",
+              "github",
+              "padtv",
+              "google-play"
+            ]
+          },
+          "category": {
+            "enum": [
+              "Filmy a TV",
+              "Hudba",
+              "Zábava",
+              "Nástroje",
+              "Systém"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "symbol": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "web"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "target": {
+                  "pattern": "^https://[^/@\\s]+[^\\s]*$"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "flatpak"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "target": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_-]*){2,}$"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "apt"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "source": {
+                  "const": "apt"
+                },
+                "target": {
+                  "pattern": "^[a-z0-9][a-z0-9+.-]+$"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "android"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "source": {
+                  "const": "google-play"
+                },
+                "target": {
+                  "pattern": "^[A-Za-z][A-Za-z0-9_]*(\\.[A-Za-z][A-Za-z0-9_]*)+$"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "source": {
+                  "const": "google-play"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "kind": {
+                  "const": "android"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

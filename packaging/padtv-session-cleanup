@@ -1,0 +1,30 @@
+#!/usr/bin/python3
+"""Release only PadTV's graphical login before greetd starts again."""
+import os
+import pwd
+from pathlib import Path
+import subprocess
+import dbus
+
+uid = pwd.getpwnam('padtv').pw_uid
+bus = dbus.SystemBus()
+manager = dbus.Interface(bus.get_object('org.freedesktop.login1', '/org/freedesktop/login1'),
+                         'org.freedesktop.login1.Manager')
+for session_id, session_uid, user, seat, path in manager.ListSessions():
+    if int(session_uid) != uid:
+        continue
+    props = dbus.Interface(bus.get_object('org.freedesktop.login1', path),
+                           'org.freedesktop.DBus.Properties').GetAll('org.freedesktop.login1.Session')
+    if str(props.get('Service')) in ('greetd', 'greetd-greeter') and str(props.get('TTY')) == 'tty7':
+        # TerminateSession alone respects KillUserProcesses=no and can leave
+        # an abandoned compositor holding the VT. Kill this exact login scope.
+        manager.KillSession(session_id, 'all', 9)
+        manager.TerminateSession(session_id)
+runtime = '/run/user/' + str(uid)
+if os.path.exists(runtime + '/bus'):
+    subprocess.run(['runuser', '-u', 'padtv', '--', 'env', 'XDG_RUNTIME_DIR=' + runtime,
+                    'DBUS_SESSION_BUS_ADDRESS=unix:path=' + runtime + '/bus',
+                    'systemctl', '--user', 'stop', 'padtv-session.target',
+                    'padtv-android-session.service', 'padtv-android-compositor.service',
+                    'padtv-app-*.scope'], timeout=20, check=False)
+Path('/run/padtv-session/greetd.run').unlink(missing_ok=True)

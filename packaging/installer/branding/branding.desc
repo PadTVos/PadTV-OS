@@ -1,0 +1,27 @@
+componentName: padtv
+welcomeStyleCalamares: true
+welcomeExpandingLogo: true
+windowExpanding: normal
+windowSize: 1100px,740px
+windowPlacement: center
+strings:
+  productName: PadTV
+  shortProductName: PadTV
+  version: "0.3 – System Core"
+  shortVersion: "0.3"
+  versionedName: PadTV 0.3 – System Core
+  shortVersionedName: PadTV 0.3
+  bootloaderEntryName: PadTV
+images:
+  productLogo: logo.png
+  productIcon: logo.png
+  productWelcome: waterfall.png
+sidebar: widget
+navigation: widget
+slideshow: show.qml
+slideshowAPI: 2
+style:
+  SidebarBackground: "#092326"
+  SidebarText: "#ffffff"
+  SidebarTextCurrent: "#ffffff"
+  SidebarBackgroundCurrent: "#6936a5"

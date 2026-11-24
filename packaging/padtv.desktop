@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=PadTV
+Comment=Televizní prostředí PadTV
+Exec=/usr/bin/padtv-session
+TryExec=/usr/bin/padtv-session
+Type=Application
+DesktopNames=PadTV

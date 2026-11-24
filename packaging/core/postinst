@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+if [ "$1" = configure ]; then
+    for padtv_file in /usr/lib/os-release /etc/os-release; do
+        dpkg-divert --package padtv-core --add --rename --divert "$padtv_file.debian" "$padtv_file"
+    done
+    ln -sfn /usr/lib/padtv-core/os-release /usr/lib/os-release
+    ln -sfn ../usr/lib/os-release /etc/os-release
+    systemctl enable padtv-account.service padtv-system.service
+    systemctl daemon-reload || true
+fi

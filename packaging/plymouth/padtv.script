@@ -1,0 +1,22 @@
+Window.SetBackgroundTopColor(0.025, 0.09, 0.10);
+Window.SetBackgroundBottomColor(0.01, 0.035, 0.055);
+logo_image = Image("logo.png");
+logo_width = Math.Min(Window.GetWidth() * 0.42, 620);
+logo_image = logo_image.Scale(logo_width, logo_width * logo_image.GetHeight() / logo_image.GetWidth());
+logo = Sprite(logo_image);
+logo.SetPosition((Window.GetWidth() - logo_image.GetWidth()) / 2, Window.GetHeight() * 0.32, 1);
+message_image = Image.Text("Spouštím PadTV…", 0.88, 0.92, 0.94, 1, "DejaVu Sans 22");
+message = Sprite(message_image);
+message.SetPosition((Window.GetWidth() - message_image.GetWidth()) / 2, Window.GetHeight() * 0.64, 1);
+dot_image = Image.Text("●", 0.65, 0.38, 1, 1, "DejaVu Sans 20");
+for (i = 0; i < 3; i++) {
+    dots[i] = Sprite(dot_image);
+    dots[i].SetPosition(Window.GetWidth() / 2 + (i - 1) * 28 - dot_image.GetWidth() / 2, Window.GetHeight() * 0.73, 1);
+}
+tick = 0;
+fun refresh() {
+    tick++;
+    for (i = 0; i < 3; i++) dots[i].SetOpacity(0.3 + 0.7 * (Math.Int(tick / 20) % 3 == i));
+}
+Plymouth.SetRefreshFunction(refresh);
+# Keep diagnostics available on Escape; never display false progress percentages.

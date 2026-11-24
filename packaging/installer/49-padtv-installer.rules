@@ -1,0 +1,6 @@
+polkit.addRule(function(action, subject) {
+    if (subject.user == "padtv" && subject.isInGroup("padtv") &&
+        action.id == "org.freedesktop.policykit.exec" &&
+        action.lookup("program") == "/usr/lib/padtv/padtv-install-gui" &&
+        polkit.spawn(["/usr/lib/padtv/padtv-active-session"]).trim() == "yes") return polkit.Result.YES;
+});

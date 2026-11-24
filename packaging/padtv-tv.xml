@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<permissions>
+    <!-- PadTV provides the launcher and routes TV activities through Waydroid. -->
+    <feature name="android.software.leanback" />
+</permissions>

@@ -1,0 +1,23 @@
+[Unit]
+Description=PadTV graphical system session
+Requires=padtv-account.service
+After=padtv-account.service systemd-user-sessions.service plymouth-quit-wait.service
+Conflicts=getty@tty7.service lightdm.service greetd.service
+StartLimitIntervalSec=0
+
+[Service]
+ExecStartPre=/usr/lib/padtv/padtv-session-cleanup
+ExecStopPost=/usr/lib/padtv/padtv-session-cleanup
+Type=simple
+RuntimeDirectory=padtv-session
+ExecStart=/usr/sbin/greetd --config /etc/padtv/greetd.toml
+Restart=always
+RestartSec=3
+IgnoreSIGPIPE=no
+SendSIGHUP=yes
+TimeoutStopSec=30
+KeyringMode=shared
+
+[Install]
+WantedBy=graphical.target
+Alias=display-manager.service

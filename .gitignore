@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.py[cod]
+/build/
+/dist/
+/artifacts/
+/virtual-machines/
+.pytest_cache/
+/repositories/
+.padtv-export.json

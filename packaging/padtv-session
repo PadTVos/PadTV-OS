@@ -1,0 +1,34 @@
+#!/bin/sh
+set -eu
+export XDG_CURRENT_DESKTOP=PadTV
+export XDG_SESSION_DESKTOP=padtv XDG_SESSION_TYPE=wayland
+export QT_QPA_PLATFORM=wayland
+if [ -r /etc/default/keyboard ]; then
+    # This file is maintained by the system installer and owned by root.
+    # shellcheck source=/dev/null
+    . /etc/default/keyboard
+fi
+export XKB_DEFAULT_LAYOUT="${XKBLAYOUT:-cz}"
+export XKB_DEFAULT_VARIANT="${XKBVARIANT:-}"
+export XKB_DEFAULT_OPTIONS="${XKBOPTIONS:-}"
+
+# Use a predictable software compositor for virtual GPUs. An explicit renderer
+# override still works; physical devices retain automatic hardware rendering.
+if systemd-detect-virt --vm --quiet; then
+    export WLR_RENDERER="${WLR_RENDERER:-pixman}"
+fi
+
+# PAM normally supplies the user session bus; also support a direct session start.
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+    exec dbus-run-session -- "$0" "$@"
+fi
+# Called indirectly by the EXIT trap.
+# shellcheck disable=SC2317
+cleanup_padtv_session() {
+    systemctl --user stop padtv-session.target padtv-android-session.service padtv-android-compositor.service 2>/dev/null || true
+    systemctl --user unset-environment WAYLAND_DISPLAY DISPLAY
+}
+trap cleanup_padtv_session EXIT
+trap 'exit 0' INT TERM
+
+labwc --config-dir /etc/padtv/labwc

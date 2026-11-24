@@ -1,0 +1,8 @@
+[Unit]
+Description=PadTV authorization agent for applications
+PartOf=padtv-session.target
+After=graphical-session-pre.target
+[Service]
+ExecStart=/usr/bin/lxpolkit
+Restart=on-failure
+Environment=GDK_BACKEND=wayland

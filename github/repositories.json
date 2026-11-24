@@ -1,0 +1,27 @@
+{
+  "organization": "PadTVos",
+  "visibility": "public",
+  "remote_status": "not_created",
+  "repositories": [
+    {
+      "name": "PadTV-OS",
+      "description": "PadTV: samostatná televizní distribuce založená na Debianu 13"
+    },
+    {
+      "name": "PadTV-Updates",
+      "description": "Metadata vydání a podepsané systémové aktualizace PadTV"
+    },
+    {
+      "name": "PadTV-Store",
+      "description": "Modulární obchod s aplikacemi pro PadTV"
+    },
+    {
+      "name": "PadTV-Apps",
+      "description": "Verzovaný katalog aplikací pro PadTV"
+    },
+    {
+      "name": "PadTV-Website",
+      "description": "Veřejná dokumentace a podklady webu PadTV"
+    }
+  ]
+}

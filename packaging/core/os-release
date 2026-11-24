@@ -1,0 +1,12 @@
+PRETTY_NAME="PadTV 0.3 – System Core"
+NAME="PadTV"
+VERSION_ID="0.3"
+VERSION="0.3 (System Core)"
+VERSION_CODENAME=trixie
+ID=padtv
+ID_LIKE=debian
+BUILD_ID="0.3.3"
+VARIANT="System Core"
+VARIANT_ID=system-core
+DEBIAN_VERSION="13"
+LOGO=padtv
