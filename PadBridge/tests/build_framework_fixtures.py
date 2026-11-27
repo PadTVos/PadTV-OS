@@ -5,7 +5,7 @@ def build():
     android=TOOLS/'android35.jar'
     run('javac','--release','8','-cp',str(android),'-d',str(classes),*map(str,(ROOT/'tests/framework08').glob('*.java')))
     run('java','-cp',str(TOOLS/'r8.jar'),'com.android.tools.r8.D8','--min-api','26','--lib',str(android),'--output',str(work),*map(str,classes.rglob('*.class')))
-    res=work/'res/values';res.mkdir(exist_ok=True)
+    res=work/'res/values';res.mkdir(parents=True,exist_ok=True)
     (res/'themes.xml').write_text('''<resources><attr name="tileGap" format="dimension"/><attr name="headlineColor" format="color"/><attr name="caption" format="string"/><attr name="missing" format="string"/><string name="title">Original resource text</string><style name="Base"><item name="tileGap">12dp</item><item name="headlineColor">#ff123456</item><item name="caption">@string/title</item></style><style name="Child" parent="Base"><item name="tileGap">24dp</item><item name="headlineColor">#ffabcdef</item></style></resources>''')
     (res/'literal.xml').write_text('<resources><string name="numeric">123</string><string name="boolean_text">false</string><string name="dimension_text">12dp</string><string name="marker_text">!bag|1|bad</string><style name="Literal"><item name="caption">false</item></style></resources>')
     package(work,'layout08','org.padtv.frameworkprobe','org.padtv.frameworkprobe.LayoutActivity',[('classes.dex',work/'classes.dex')])
