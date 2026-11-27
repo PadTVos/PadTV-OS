@@ -1,7 +1,7 @@
-# PadTV 0.6 – Native Compatibility
+# PadTV 0.7 – Android Runtime & Multimedia
 
 Samostatná televizní distribuce založená na **Debianu 13**, pro PC a mini PC
-**amd64** připojené přes HDMI. Vydání systému: 0.6; balíčky: 0.6.0; PadBridge: 0.3.0 (experimentální).
+**amd64** připojené přes HDMI. Vydání systému: 0.7; balíčky: 0.7.0; PadBridge: 0.4.0 (experimentální).
 Rozhraní Liquid Glass vychází z dodaného návrhu a zachovává logo i pozadí.
 
 ## PadBridge v této verzi
@@ -14,15 +14,19 @@ vykreslování přes Canvas, barevné plochy, bitmapová šachovnice a ovládán
 Waydroid byl během testu vypnutý. Store skutečně stahuje vlastní testovací APK
 z GitHub Releases a před instalací ověřuje hash a podpis. Jsou zapojené dodané
 ikony PadTV-V6 a odstraněné reklamní úvodní texty Store.
-PadBridge 0.3 přidává omezené x86-64 ELF/JNI, APKM a analyzátor JSON/HTML.
-Java/Kotlin, XML, Handler/Looper, SQLite a místní služby zůstávají zachované.
-ART, Bionic, WebView, Android mediální API a úplný Android framework jsou nehotové.
-V aplikaci lze spravovat oprávnění sítě a odinstalovat ji včetně volby zachování dat.
-YouTube TV a Netflix přes PadBridge zatím nejsou ověřené ani podporované;
-přehrávání médií, Bionic/ARM a DRM jsou další milníky. Waydroid zůstává oddělenou zálohou.
+PadBridge 0.4 přidává skutečné MediaExtractor/MediaCodec/AudioTrack/MediaPlayer
+přes FFmpeg a omezený zvukový broker, SurfaceView, EGL/GLES přes Mesa,
+WebView přes izolované Chromium a správu certifikátů pro jednotlivé aplikace.
+Tyto komponenty mají integrační testy vykonávající originální DEX testovacích APK.
+**Jellyfin, YouTube TV a Netflix zatím nejsou funkční přes PadBridge.**
+Instalace APK není důkazem funkčního rozhraní nebo přehrávání. Stav konkrétních
+verzí, chyby a další kroky uvádí [ověření 0.7](docs/validation-0.7.md).
+Nejde o plný Bionic, ART, Android framework ani certifikované zařízení.
+Stávající webové aplikace a oddělený Waydroid jsou zachované, ale nejsou použité
+jako náhrada nebo důkaz kompatibility Android APK.
 
 [Samostatný PadBridge](https://github.com/PadTVos/PadBridge) ·
-[Stav implementace 0.3](PadBridge/docs/runtime-0.3.md) ·
+[Stav implementace 0.4](PadBridge/docs/runtime-0.4.md) ·
 [Podporované API](PadBridge/docs/api.md)
 
 Zdroj v adresáři `PadBridge/` je vydaná kopie samostatného projektu, aby šlo OS
@@ -45,11 +49,11 @@ Skutečně provedené kontroly a zbývající zkoušky jsou v [protokolu ověře
 
 ## Vyzkoušení
 
-ISO: `dist/padtv-0.6.0-amd64.iso`; vedle něj je SHA-256.
-Veřejné testovací vydání je v [GitHub Releases](https://github.com/PadTVos/PadTV-OS/releases/tag/v0.6.0).
+ISO: `dist/padtv-0.7.0-amd64.iso`; vedle něj je SHA-256.
+Veřejné testovací vydání je v [GitHub Releases](https://github.com/PadTVos/PadTV-OS/releases/tag/v0.7.0).
 Kvůli limitu velikosti obsahuje dvě části ISO a `Join-PadTV.ps1` pro jejich
 spojení a ověření. Místní ISO v `dist/` je již kompletní.
-Pro celý systém ve Windows použijte zástupce **PadTV 0.6 Native Compatibility – virtuální PC**:
+Pro celý systém ve Windows použijte zástupce **PadTV 0.7 Android Runtime & Multimedia – virtuální PC**:
 
 ```powershell
 .\.venv\Scripts\python.exe scripts/run-vm.py
@@ -129,6 +133,7 @@ sudo apt-get install live-build debootstrap xorriso squashfs-tools \
   isolinux syslinux-common grub-pc-bin grub-efi-amd64-bin mtools \
   python3 python3-pyqt6 dpkg-dev build-essential devscripts equivs \
   ca-certificates curl git qemu-utils e2fsprogs
+# Doplňte také sestavovací závislosti z PadBridge/README.md.
 bash scripts/build-deb.sh
 sudo bash scripts/build-iso.sh
 bash scripts/build-persistence.sh
@@ -160,5 +165,5 @@ přihlášení a přepínač `-Publish`. Lokální export není založení organ
 - [Stav ověření](docs/validation.md)
 - [Historické ověření 0.3.1](docs/validation-0.3.1.md)
 
-Pro sestavení 0.6 nainstalujte i [sestavovací závislosti PadBridge](PadBridge/README.md).
+Pro sestavení 0.7 nainstalujte i [sestavovací závislosti PadBridge](PadBridge/README.md).
 `build-iso.sh` sestavuje také samostatný balíček `padbridge`.

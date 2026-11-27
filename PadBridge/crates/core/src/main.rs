@@ -2,6 +2,7 @@ mod analyzer;
 mod apk;
 mod backends;
 mod bundles;
+mod certificates;
 mod dex;
 mod manager;
 mod media;
@@ -62,6 +63,9 @@ fn dispatch() -> Result<Value> {
             Ok(json!({"ok":true,"app":set.app,"diagnostics":dex::diagnose_set(&set.paths)?}))
         }
         "backends" => Ok(json!({"ok":true,"backends":backends::list()})),
+        "certificates" => certificates::list(&manager, arg(1)?),
+        "trust-certificate" => certificates::update(&manager, arg(1)?, "add", arg(2)?),
+        "untrust-certificate" => certificates::update(&manager, arg(1)?, "remove", arg(2)?),
         "media-probe" | "media-decode" => {
             media::probe(&PathBuf::from(arg(1)?), action == "media-decode")
         }

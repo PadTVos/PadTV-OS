@@ -11,13 +11,16 @@ jobs:
         run: |
           docker run --rm --privileged -v "$PWD:/source" -w /source debian:13 bash -euxc '
             apt-get update
-            apt-get install -y --no-install-recommends ca-certificates rustc cargo pkg-config libsdl2-dev libsdl2-ttf-dev libsdl2-image-dev openjdk-21-jdk-headless aapt apksigner libsmali-java android-framework-res enjarify bubblewrap fonts-dejavu-core python3 python3-pil dpkg-dev kotlin libxerial-sqlite-jdbc-java ffmpeg clang lld gcc libc6-dev
+            apt-get install -y --no-install-recommends ca-certificates rustc cargo pkg-config libsdl2-dev libsdl2-ttf-dev libsdl2-image-dev openjdk-21-jdk-headless aapt apksigner libsmali-java android-framework-res enjarify bubblewrap fonts-dejavu-core python3 python3-pil dpkg-dev kotlin libxerial-sqlite-jdbc-java ffmpeg clang lld gcc libc6-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev libegl-dev libgles-dev libegl-mesa0 libgl1-mesa-dri libasm-java chromium openssl pulseaudio pulseaudio-utils
             bash scripts/build.sh
             cargo test --workspace --locked
             python3 scripts/fetch-test-tools.py
             python3 tests/build_fixtures.py
             python3 tests/build_runtime_fixtures.py
             python3 tests/build_native_fixtures.py
+            python3 tests/build_media_fixtures.py
+            python3 tests/resources07.py
+            python3 tests/audio_broker07.py
             python3 tests/analyzer_unit.py
             useradd -m builder
             chown -R builder:builder /source
@@ -25,6 +28,9 @@ jobs:
             runuser -u builder -- python3 tests/runtime05.py
             runuser -u builder -- python3 tests/runtime06.py
             runuser -u builder -- python3 tests/thirdparty06.py
+            runuser -u builder -- python3 tests/runtime07.py
+            runuser -u builder -- pulseaudio --start --exit-idle-time=-1
+            runuser -u builder -- python3 tests/media07.py
             bash scripts/build-deb.sh
           '
       - uses: actions/upload-artifact@v4

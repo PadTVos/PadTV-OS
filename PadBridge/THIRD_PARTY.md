@@ -36,3 +36,21 @@ DRM module, signing key, certificate or Google Play binary is in this repository
 - TV Bro and Launch on Boot were obtained from upstream GitHub release assets
   for local compatibility testing. They are not redistributed or bundled. Their
   URLs, versions and APK SHA-256 values are retained in the compatibility record.
+
+## Added in 0.4
+
+- FFmpeg libavformat/libavcodec/libavutil/libswscale/libswresample dynamically
+  linked from Debian 13. Debian build options and LGPL/GPL component notices
+  apply; package copyright/source information is retained in the ISO. This is
+  not a new FFmpeg implementation or a claim that all enabled codecs are tested.
+- Mesa EGL/GLES libraries: MIT and component notices in Debian packages.
+- Chromium WebView subprocess: Chromium BSD-style and bundled third-party
+  notices in `/usr/share/doc/chromium/copyright`; no sandbox-disabling patches.
+- ASM 9.8: BSD-3-Clause, `/usr/share/doc/libasm-java/copyright`. Used only to adapt
+  derived JVM constructor bytecode; the original signed APK is untouched.
+- Official Google Android API 35 SDK stubs: test compilation only. Pinned archive
+  and jar digests are in `scripts/fetch-test-tools.py`; never shipped in the ISO.
+- Jellyfin Android TV 0.20.1: original official upstream release used privately
+  for compatibility analysis; not redistributed in PadTV's repositories/ISO.
+- Original Enjarify package remains unmodified on disk. `runtime/dex_fixes.py`
+  applies a documented general exception-handler adapter at translation time.

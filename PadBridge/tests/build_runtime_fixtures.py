@@ -6,13 +6,15 @@ TOOLS=Path(os.environ.get('PADBRIDGE_TEST_TOOLS',ROOT/'build/test-tools'))
 ANDROID=TOOLS/'android.jar'
 def d8(inputs,out,api=26):
     run('java','-cp',str(TOOLS/'r8.jar'),'com.android.tools.r8.D8','--min-api',str(api),'--lib',str(ANDROID),'--output',str(out),*map(str,inputs))
-def package(work,name,pkg,activity,code,split=None,extra=None):
+def package(work,name,pkg,activity,code,split=None,extra=None,permissions=(),application_class=None):
     resources=work/'res';resources.mkdir(exist_ok=True)
     manifest=work/'AndroidManifest.xml'
     attr=f' split="{split}"' if split else ''
     application=f'<application><activity android:name="{activity}" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LEANBACK_LAUNCHER"/></intent-filter></activity></application>' if not split else '<application android:hasCode="true"/>'
     if pkg=='org.padtv.runtimeprobe' and not split:application=application.replace('</application>','<service android:name="org.padtv.runtimeprobe.ProbeService"/><provider android:name="org.padtv.runtimeprobe.ProbeProvider" android:authorities="org.padtv.probe" android:exported="false"/></application>')
-    manifest.write_text(f'<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="{pkg}" android:versionCode="1" android:versionName="1.0"{attr}><uses-sdk android:minSdkVersion="21"/>{application}</manifest>')
+    permission_xml=''.join(f'<uses-permission android:name="{p}"/>' for p in permissions)
+    if application_class:application=application.replace('<application>',f'<application android:name="{application_class}">')
+    manifest.write_text(f'<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="{pkg}" android:versionCode="1" android:versionName="1.0"{attr}><uses-sdk android:minSdkVersion="21"/>{permission_xml}{application}</manifest>')
     unsigned=work/'unsigned.apk';run('aapt','package','-f','-M',str(manifest),'-I','/usr/share/android-framework-res/framework-res.apk','-S',str(resources),'-F',str(unsigned))
     with zipfile.ZipFile(unsigned,'a') as z:
         for n,p in code:z.write(p,n)

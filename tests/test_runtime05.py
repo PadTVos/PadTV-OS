@@ -13,6 +13,10 @@ class Runtime05IntegrationTests(unittest.TestCase):
     def test_android_catalog_exposes_unverified_compatibility(self):
         apps=[p for p in load() if p.kind=='android']
         self.assertGreaterEqual(len(apps),2)
-        for app in apps:self.assertIn('neověřeno',app.compatibility.lower())
+        for app in apps:
+            # 0.7 has observed launch failures, rather than only untested APKs.
+            # Keep the original safety check: never advertise them as working.
+            self.assertEqual(app.compatibility_status,'unsupported')
+            self.assertIn('nefunguje',app.compatibility.lower())
 
 if __name__=='__main__':unittest.main()

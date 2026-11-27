@@ -67,8 +67,12 @@ class RuntimeTests(unittest.TestCase):
     def test_audio_video_report_unsupported(self):
         for name,api in [('audio','android.media.AudioTrack'),('media','android.media.MediaCodec')]:
             with self.subTest(name=name):
-                result=self.call('diagnose',self.fixtures/(name+'.apk'));self.assertIn(api,result['diagnostics']['unsupported_classes'])
-                app=self.install(name);self.call('run',app['package'],'--headless',ok=False)
+                # 0.4 now implements both classes. Keep the original APKs and
+                # exercise the same calls: decoder creation works, the native
+                # output-device query remains explicitly unsupported.
+                result=self.call('analyze',self.fixtures/(name+'.apk'))
+                self.assertNotIn(api.replace('.','/'),result['static']['missing_classes'])
+                app=self.install(name);self.call('run',app['package'],'--headless',ok=name=='media')
     def test_archive_paths_rejected(self):
         for name in ['../escape','/absolute','assets/../../escape']:
             with self.subTest(name=name):
@@ -81,7 +85,10 @@ class RuntimeTests(unittest.TestCase):
         library=result['diagnostics']['native_details'][0]
         self.assertEqual(library['elf_machine'],62)
         self.assertIn('libc.so.6',library['needed'])
-        app=self.install('native');self.call('run',app['package'],'--headless',ok=False)
+        self.assertFalse(library['supported'])
+        # Its original DEX does not load this optional library. Java execution
+        # is allowed; runtime07 separately asserts a real load is rejected.
+        app=self.install('native');self.assertIn('DEX_ACTIVITY_STORAGE_OK',self.call('run',app['package'],'--headless')['output'])
     def test_leanback_only_launcher(self):
         app=self.install('tvonly');self.assertTrue(app['television']);self.assertEqual(app['activity'],'org.padtv.fixture.Main')
         self.assertIn('DEX_ACTIVITY_STORAGE_OK',self.call('run',app['package'],'--headless')['output'])

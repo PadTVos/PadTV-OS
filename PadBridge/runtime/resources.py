@@ -34,7 +34,14 @@ def strings(b):
         if utf8:size,p=length(p,True)
         else:size*=2
         if size>1024*1024 or p+size>len(b): raise ValueError('Resource string exceeds bounds')
-        result.append(b[p:p+size].decode('utf-8' if utf8 else 'utf-16le'))
+        raw=b[p:p+size]
+        if utf8:
+            # Android string pools can contain CESU-8 surrogate pairs and MUTF-8 NUL.
+            # Combine valid pairs, retaining strict rejection of malformed strings.
+            text=raw.replace(b'\xc0\x80',b'\x00').decode('utf-8',errors='surrogatepass')
+            text=text.encode('utf-16le',errors='surrogatepass').decode('utf-16le')
+        else:text=raw.decode('utf-16le')
+        result.append(text)
     return result
 
 def value(kind,data,pool):
@@ -73,6 +80,7 @@ def xml(data):
     return ET.tostring(root,encoding='utf-8')
 
 def table(data):
+    if len(data)<12 or u16(data,0)!=2 or u16(data,2)!=12 or u32(data,4)!=len(data):raise ValueError('Invalid Android resource table header')
     global_pool=[];result={}
     for kind,head,b in chunks(data,12):
         if kind==1:global_pool=strings(b)
@@ -82,17 +90,25 @@ def table(data):
         for ck,ch,c in chunks(b,head):
             if ck!=0x201:continue
             typ=c[8];flags=c[9];count=u32(c,12);start=u32(c,16)
-            if flags:raise ValueError('Sparse/compact resource type tables require a newer resource decoder')
-            if count>200000 or ch+count*4>len(c):raise ValueError('Invalid resource entries')
+            if flags&~3 or flags==3:raise ValueError('Unsupported resource index flags')
+            stride=2 if flags&2 else 4
+            if count>200000 or ch+count*stride>len(c):raise ValueError('Invalid resource entries')
             config_size=u32(c,20)
             default=not any(c[24:20+config_size])
             for i in range(count):
-                off=u32(c,ch+i*4)
-                if off==0xffffffff:continue
+                if flags&1:index=u16(c,ch+i*4);off=u16(c,ch+i*4+2)*4
+                elif flags&2:
+                    index=i;off=u16(c,ch+i*2)
+                    if off==0xffff:continue
+                    off*=4
+                else:
+                    index=i;off=u32(c,ch+i*4)
+                    if off==0xffffffff:continue
                 p=start+off;size=u16(c,p);entry_flags=u16(c,p+2);key=u32(c,p+4)
-                rid=(package<<24)|(typ<<16)|i
+                rid=(package<<24)|((typ+(u32(b,284) if head>=288 else 0))<<16)|index
                 if rid in result and not default:continue
-                val='!unsupported-complex-resource' if entry_flags&1 else value(c[p+size+3],u32(c,p+size+4),global_pool)
+                if entry_flags&8:key=size;val=value(entry_flags>>8,u32(c,p+4),global_pool)
+                else:val='!unsupported-complex-resource' if entry_flags&1 else value(c[p+size+3],u32(c,p+size+4),global_pool)
                 result[rid]=(types[typ-1],keys[key],val)
     return result
 

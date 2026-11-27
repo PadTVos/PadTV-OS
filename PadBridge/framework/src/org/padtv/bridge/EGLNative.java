@@ -1,0 +1,5 @@
+package org.padtv.bridge;
+public final class EGLNative {
+ static{System.loadLibrary("padbridge_egl");}
+ public static synchronized native long display();public static synchronized native int[] initialize(long display);public static synchronized native long[] configs(long display,int[] attributes,int offset,int limit);public static synchronized native long context(long display,long config,long share,int[] attributes,int offset);public static synchronized native long pbuffer(long display,long config,int[] attributes,int offset);public static synchronized native boolean current(long display,long draw,long read,long context);public static synchronized native boolean swap(long display,long surface);public static synchronized native boolean destroy(long display,long value,int kind);public static synchronized native boolean terminate(long display);public static synchronized native int error();public static synchronized native String query(long display,int name);public static synchronized native byte[] pixels(int width,int height);
+}

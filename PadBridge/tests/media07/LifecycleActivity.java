@@ -1,0 +1,4 @@
+package org.padtv.lifecycleprobe;
+public class LifecycleActivity extends android.app.Activity {
+ protected void onCreate(android.os.Bundle state){super.onCreate(state);if(!ProbeApplication.initialized||!(getApplication() instanceof ProbeApplication)||getApplicationContext()!=getApplication())throw new AssertionError("Original Application lifecycle missing");String text="Original UTF8: \u010desk\u00fd text \ud83d\udcfa";String encoded=android.util.Base64.encodeToString(text.getBytes(java.nio.charset.StandardCharsets.UTF_8),android.util.Base64.URL_SAFE|android.util.Base64.NO_WRAP);String decoded=new String(android.util.Base64.decode(encoded,android.util.Base64.URL_SAFE),java.nio.charset.StandardCharsets.UTF_8);if(!text.equals(decoded))throw new AssertionError("Base64 roundtrip");System.out.println("APPLICATION_CONTEXT_BASE64_OK");}
+}

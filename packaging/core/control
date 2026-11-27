@@ -1,10 +1,10 @@
 Package: padtv-core
-Version: 0.6.0
+Version: 0.7.0
 Section: admin
 Priority: optional
 Architecture: all
 Maintainer: PadTV Project <padtv@localhost>
 Depends: python3, python3-dbus, python3-gi, systemd, dbus, polkitd, adduser, libpam-systemd, libnss-systemd, grub2-common, grub-pc-bin, grub-efi-amd64-bin, efibootmgr, util-linux-extra
 Replaces: padtv-session (<< 0.3.3)
-Description: PadTV 0.6 Native Compatibility
+Description: PadTV 0.7 Android Runtime & Multimedia
  Distribution identity, device and service API, power management and TV account.

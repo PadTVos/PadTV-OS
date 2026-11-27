@@ -32,3 +32,19 @@ Uninstall offers preserving or deleting data. No Waydroid directory is touched.
 modify their own files; these checks are not a defense against a compromised
 host account or administrator. APK signer identity is not an assertion that an
 app is trustworthy, published by Google, or certified.
+
+## Added in 0.4
+
+The app sees a private playback-broker socket, never the host PulseAudio/PipeWire
+socket. The separate trusted process accepts bounded PCM playback and playback
+controls only; unknown/capture operations and oversized packets are rejected.
+It exits with the supervised app. EGL uses a surfaceless Mesa context; the app
+does not gain unrestricted host GPU or audio devices to make tests pass.
+
+Public CAs can be explicitly added to one installed package while it is stopped.
+Immutable generations live under `certificates/<package>/`; stores and metadata
+are integrity checked and mounted read-only. JVM/FFmpeg trust changes do not
+affect other packages or system roots. The app cannot import certificates itself.
+Chromium WebView uses system roots and its own sandbox within bubblewrap; it has
+no remote TCP debugging port. Browser profiles remain under that app's `/data`.
+These features do not remove the prototype security limitations above.

@@ -144,11 +144,24 @@ pub fn diagnose_set(paths: &[PathBuf]) -> Result<Value> {
         }
         native.extend(found.into_iter().cloned());
     }
-    let native_supported = crate::native_elf::selected(paths).is_ok();
+    let loadable: BTreeSet<_> = libraries
+        .iter()
+        .filter(|r| r["supported"] == true)
+        .filter_map(|r| r["path"].as_str())
+        .filter(|p| p.starts_with("lib/x86_64/"))
+        .filter_map(|p| p.rsplit('/').next())
+        .collect();
+    let unavailable: BTreeSet<_> = native
+        .iter()
+        .filter_map(|p| p.rsplit('/').next())
+        .filter(|name| !loadable.contains(name))
+        .collect();
+    let native_supported = unavailable.is_empty();
     missing.retain(|name| !defined.contains(name));
     Ok(
         json!({"backend":"enjarify-openjdk","dex_files":dex_count,"unsupported_classes":missing,
         "dex_versions":versions,"defined_classes":defined.len(),"dex_errors":errors,"native_libraries":native,"native_details":libraries,"native_abi_supported":native_supported,
+        "unavailable_native_libraries":unavailable,"native_loading":"Only preflighted supported x86-64 libraries are staged; unsupported optional libraries fail when requested by original code",
         "google_play_services":missing.iter().any(|c|c.starts_with("com.google.android.gms.")),
         "drm":"No licensed MediaDrm provider; Widevine and protected video unavailable",
         "assessment":"Static class references only; method signatures, reflection, resources and behavior require execution tests",

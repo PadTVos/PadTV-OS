@@ -10,6 +10,65 @@ use std::{
     path::{Path, PathBuf},
 };
 
+const ABI_LIBRARIES: &[&str] = &["libc.so", "libm.so", "libdl.so", "liblog.so"];
+// No Bionic structure-bearing calls, pthread ABI, Android TLS or dynamic linking.
+const ABI_SYMBOLS: &[&str] = &[
+    "malloc",
+    "calloc",
+    "realloc",
+    "free",
+    "memcpy",
+    "memmove",
+    "memset",
+    "memcmp",
+    "memchr",
+    "strlen",
+    "strcmp",
+    "strncmp",
+    "strcpy",
+    "strncpy",
+    "strchr",
+    "strrchr",
+    "strstr",
+    "strdup",
+    "atoi",
+    "atol",
+    "strtol",
+    "strtoul",
+    "strtoll",
+    "strtoull",
+    "strtod",
+    "abort",
+    "getpid",
+    "sin",
+    "cos",
+    "tan",
+    "sqrt",
+    "pow",
+    "exp",
+    "log",
+    "floor",
+    "ceil",
+    "fabs",
+    "fmod",
+    "sinf",
+    "cosf",
+    "sqrtf",
+    "powf",
+    "floorf",
+    "ceilf",
+    "fabsf",
+    "fmodf",
+    "__cxa_finalize",
+    "__cxa_atexit",
+    "__stack_chk_fail",
+    "__errno",
+    "__assert2",
+    "__system_property_get",
+    "__android_log_write",
+    "__android_log_print",
+];
+
 pub fn inspect(name: &str, bytes: &[u8]) -> Value {
     match goblin::elf::Elf::parse(bytes) {
         Ok(elf) => {
@@ -23,20 +82,36 @@ pub fn inspect(name: &str, bytes: &[u8]) -> Value {
                 .program_headers
                 .iter()
                 .any(|p| p.p_type == goblin::elf::program_header::PT_TLS);
+            let unsupported_symbols: Vec<_> = undefined
+                .iter()
+                .filter(|s| !ABI_SYMBOLS.contains(s))
+                .collect();
+            let unsupported_libraries: Vec<_> = elf
+                .libraries
+                .iter()
+                .filter(|s| !ABI_LIBRARIES.contains(s))
+                .collect();
+            let versioned = elf
+                .verneed
+                .as_ref()
+                .map(|v| v.iter().next().is_some())
+                .unwrap_or(false);
             let supported = elf.is_64
                 && elf.little_endian
                 && elf.header.e_machine == 62
                 && elf.header.e_type == 3
                 && elf.interpreter.is_none()
                 && !tls
-                && elf.libraries.is_empty()
-                && undefined.is_empty();
+                && unsupported_libraries.is_empty()
+                && unsupported_symbols.is_empty()
+                && !versioned;
             json!({"path":name,"elf_machine":elf.header.e_machine,"is_64_bit":elf.is_64,
                 "architecture":match elf.header.e_machine {62=>"x86_64",3=>"x86",183=>"aarch64",40=>"arm",_=>"unknown"},
                 "needed":elf.libraries,"undefined_symbols":undefined,"tls":tls,
-                "supported":supported,"loader":"sandboxed-host-loader-freestanding-only",
-                "unresolved_android_abi_dependencies":elf.libraries,
-                "error":if supported {Value::Null} else {json!("Requires dependency-free little-endian x86-64 ET_DYN without TLS or undefined symbols; Bionic, Android linker and ARM translation are unavailable")}})
+                "supported":supported,"loader":if elf.libraries.is_empty()&&undefined.is_empty(){"sandboxed-host-loader-freestanding-only"}else{"sandboxed-host-loader-limited-unversioned-abi"},
+                "versioned_imports":versioned,"unsupported_symbols":unsupported_symbols,
+                "unresolved_android_abi_dependencies":unsupported_libraries,
+                "error":if supported {Value::Null} else {json!("Requires little-endian x86-64 ET_DYN without TLS/versioned imports and only approved scalar/memory ABI symbols. Full Bionic, Android linker and ARM translation are unavailable")}})
         }
         Err(error) => {
             json!({"path":name,"supported":false,"error":format!("Invalid ELF: {error}")})
@@ -60,10 +135,12 @@ pub fn selected(paths: &[PathBuf]) -> Result<BTreeMap<String, Vec<u8>>> {
             if parts[1] == "x86_64" {
                 let data = apk::read_entry(&mut zip, name)?;
                 let report = inspect(name, &data);
-                ensure!(
-                    report["supported"] == true,
-                    "Unsupported native library: {report}"
-                );
+                // Optional native libraries must not prevent original Java code
+                // from starting. Unsupported bytes are never loaded: the JVM
+                // raises UnsatisfiedLinkError if the app actually requests them.
+                if report["supported"] != true {
+                    continue;
+                }
                 ensure!(
                     selected.insert(parts[2].to_owned(), data).is_none(),
                     "Duplicate native library in splits"
@@ -71,14 +148,22 @@ pub fn selected(paths: &[PathBuf]) -> Result<BTreeMap<String, Vec<u8>>> {
             }
         }
     }
-    ensure!(names.len()==selected.len(), "Some native libraries have no x86-64 variant; ARM and 32-bit x86 translation are unavailable");
+    // Full ABI diagnostics remain in inspect/analyze; no host library substitution.
     Ok(selected)
 }
 
 pub fn stage(paths: &[PathBuf], parent: &Path) -> Result<tempfile::TempDir> {
     let stage = tempfile::tempdir_in(parent)?;
     for (name, bytes) in selected(paths)? {
+        ensure!(
+            !ABI_LIBRARIES.contains(&name.as_str()),
+            "APK cannot replace the native ABI adapter"
+        );
         fs::write(stage.path().join(name), bytes)?;
+    }
+    let adapter = crate::runtime::share().join("libpadbridge_bionic_abi.so");
+    for name in ABI_LIBRARIES {
+        fs::copy(&adapter, stage.path().join(name))?;
     }
     Ok(stage)
 }

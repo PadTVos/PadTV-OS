@@ -17,8 +17,10 @@ public class Activity extends Context implements android.view.Window.Callback {
     protected void onDestroy() { }
     // Android lifecycle hooks intentionally have empty base implementations:
     // subclasses override them; bridgeStart/Stop actually dispatch the lifecycle.
-    public final void bridgeStart() { if(started)throw new IllegalStateException("Already started");started=true;onCreate(null);onStart();onResume();onAttachedToWindow();onWindowFocusChanged(true); }
-    public final void bridgeStop() { if(started){onWindowFocusChanged(false);if(content!=null)View.bridgeDetach(content);onDetachedFromWindow();onPause();onStop();onDestroy();started=false;} }
+    private void lifecycle(int state){if(org.padtv.bridge.Host.application!=null)org.padtv.bridge.Host.application.bridgeLifecycle(this,state);}
+    public android.app.Application getApplication(){return org.padtv.bridge.Host.application;}
+    public final void bridgeStart() { if(started)throw new IllegalStateException("Already started");started=true;onCreate(null);lifecycle(0);onStart();lifecycle(1);onResume();lifecycle(2);onAttachedToWindow();onWindowFocusChanged(true); }
+    public final void bridgeStop() { if(started){onWindowFocusChanged(false);if(content!=null)View.bridgeDetach(content);onDetachedFromWindow();onPause();lifecycle(3);onStop();lifecycle(4);onDestroy();lifecycle(5);started=false;} }
     public void setContentView(View view) { content=view;window.setContentView(view); }
     public void setContentView(int resource) { setContentView(android.view.LayoutInflater.from(this).inflate(resource,null,false)); }
     public View findViewById(int id){return content==null?null:content.findViewById(id);}
@@ -31,5 +33,5 @@ public class Activity extends Context implements android.view.Window.Callback {
     public void onWindowFocusChanged(boolean focus){}public void onContentChanged(){}public void onWindowAttributesChanged(android.view.WindowManager.LayoutParams p){}public void onAttachedToWindow(){}public void onDetachedFromWindow(){}
     public android.content.Intent getIntent(){return intent;}public void setIntent(android.content.Intent i){intent=i;}
     public void finish(){org.padtv.bridge.Host.finish(this);}public void onBackPressed(){finish();}
-    public void bridgePause(){onPause();onStop();}public void bridgeResume(){if(content!=null)org.padtv.bridge.Host.setContent(content);onStart();onResume();}
+    public void bridgePause(){onPause();lifecycle(3);onStop();lifecycle(4);}public void bridgeResume(){if(content!=null)org.padtv.bridge.Host.setContent(content);onStart();lifecycle(1);onResume();lifecycle(2);}
 }

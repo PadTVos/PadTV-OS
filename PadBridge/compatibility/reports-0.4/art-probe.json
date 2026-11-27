@@ -1,0 +1,113 @@
+{
+  "probe": "Debian AOSP host ART",
+  "dex_executed": false,
+  "backend_available": false,
+  "libraries": [
+    {
+      "name": "libtinyxml2.so.11",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "liblz4.so.1",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "liblzma.so.5",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "libz.so.1",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "libicuuc.so.76",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "libicui18n.so.76",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "libexpat.so.1",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "/usr/lib/x86_64-linux-gnu/android/liblog.so.0",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "/usr/lib/x86_64-linux-gnu/android/libbase.so.0",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "/usr/lib/x86_64-linux-gnu/android/libcutils.so.0",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "/usr/lib/x86_64-linux-gnu/android/libziparchive.so.0",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "/usr/lib/x86_64-linux-gnu/android/libbacktrace.so.0",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "/usr/lib/x86_64-linux-gnu/android/libsigchain.so.0",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "/usr/lib/x86_64-linux-gnu/android/libnativebridge.so.0",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "/usr/lib/x86_64-linux-gnu/android/libnativeloader.so.0",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "/usr/lib/x86_64-linux-gnu/android/libnativehelper.so.0",
+      "loaded": true,
+      "JNI_CreateJavaVM": true
+    },
+    {
+      "name": "/usr/lib/x86_64-linux-gnu/android/libcpu_features.so.0",
+      "loaded": true,
+      "JNI_CreateJavaVM": false
+    },
+    {
+      "name": "/usr/lib/x86_64-linux-gnu/android/libart.so.0",
+      "loaded": true,
+      "JNI_CreateJavaVM": true
+    }
+  ],
+  "vm_probe": {
+    "exit_code": 1,
+    "stdout": "{\"JNI_CreateJavaVM_result\": -1, \"vm_created\": false, \"dex_executed\": false}\n",
+    "stderr": "11-27 15:54:37.090  8007  8007 I python3 : parsed_options.cc:691 setting boot class path to /usr/share/padbridge/art/core-oj.jar:/usr/share/padbridge/art/core-libart.jar\n11-27 15:54:37.093  8007  8007 I python3 : heap.cc:423 Using CollectorTypeCC GC.\n11-27 15:54:37.105  8007  8007 W python3 : runtime.cc:1289 Skipping non-existent dex file '/usr/share/padbridge/art/core-oj.jar'\n11-27 15:54:37.105  8007  8007 W python3 : runtime.cc:1289 Skipping non-existent dex file '/usr/share/padbridge/art/core-libart.jar'\n11-27 15:54:37.106  8007  8007 E python3 : runtime.cc:1890 Could not initialize without image: Boot classpath is empty.\n",
+    "dex_executed": false
+  },
+  "boot_files": {
+    "core-oj.jar": false,
+    "core-libart.jar": false,
+    "boot.art": false
+  },
+  "next_required": [
+    "Build matching AOSP host ART/libcore boot DEX and JNI libraries",
+    "Create VM and execute original DEX in bubblewrap",
+    "Validate GC, reflection, threads and media/framework JNI against ART"
+  ]
+}

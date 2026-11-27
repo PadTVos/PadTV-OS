@@ -49,7 +49,7 @@ impl Backend for Enjarify {
 pub struct Art;
 impl Backend for Art {
     fn prepare(&self, _: &Path, _: &Path) -> Result<()> {
-        bail!("AOSP ART has not been built or validated")
+        bail!("AOSP ART VM creation is not functional: matching boot DEX/libcore and Android framework are unavailable")
     }
     fn command(&self, _: &str, _: &str, _: bool) -> Result<Vec<String>> {
         bail!("AOSP ART execution is unavailable")
@@ -62,7 +62,7 @@ impl Backend for Art {
     }
     fn details(&self) -> Value {
         json!({"id":self.id(),"available":false,"experimental":true,
-        "reason":"Host ART, matching boot image/libcore, JNI ABI and sandbox integration are not built or validated"})
+        "reason":"Debian libart loads in the development probe; JNI_CreateJavaVM returns -1 without matching boot DEX/libcore. No ART DEX execution or sandbox integration is validated"})
     }
 }
 pub fn list() -> Value {

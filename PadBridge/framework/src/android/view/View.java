@@ -19,6 +19,7 @@ public class View {
     public interface OnClickListener{void onClick(View view);}
     public void setOnClickListener(OnClickListener value){listener=value;}
     public boolean performClick(){if(!enabled||visibility!=VISIBLE||listener==null)return false;listener.onClick(this);return true;}
+    public boolean dispatchKeyEvent(KeyEvent event){return false;}
     public Context getContext(){return context;}
     public void setId(int value){id=value;}public int getId(){return id;}
     public View findViewById(int value){return value==id?this:null;}

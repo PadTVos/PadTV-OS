@@ -7,6 +7,57 @@ use std::{
     process::{Command, Stdio},
 };
 
+struct PlaybackBroker {
+    child: std::process::Child,
+    directory: tempfile::TempDir,
+}
+impl PlaybackBroker {
+    fn start(runtime: &Path, log: &Path) -> Result<Self> {
+        let directory = tempfile::tempdir()?;
+        let socket = directory.path().join("playback.sock");
+        let mut cmd = Command::new("/usr/bin/python3");
+        cmd.env_clear()
+            .env("PATH", "/usr/bin:/bin")
+            .env("LANG", "C.UTF-8");
+        if let Some(xdg) = env::var_os("XDG_RUNTIME_DIR") {
+            cmd.env("XDG_RUNTIME_DIR", &xdg);
+            cmd.env(
+                "PULSE_SERVER",
+                format!("unix:{}/pulse/native", PathBuf::from(xdg).display()),
+            );
+        }
+        let child = cmd
+            .arg(runtime.join("audio_broker.py"))
+            .arg(&socket)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(fs::File::create(log)?)
+            .spawn()
+            .context("Playback broker could not start")?;
+        let mut broker = Self { child, directory };
+        for _ in 0..100 {
+            if socket.exists() {
+                return Ok(broker);
+            }
+            ensure!(
+                broker.child.try_wait()?.is_none(),
+                "Playback broker exited before readiness"
+            );
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        anyhow::bail!("Playback broker readiness timeout")
+    }
+    fn socket(&self) -> PathBuf {
+        self.directory.path().join("playback.sock")
+    }
+}
+impl Drop for PlaybackBroker {
+    fn drop(&mut self) {
+        let _ = self.child.kill();
+        let _ = self.child.wait();
+    }
+}
+
 pub(crate) fn share() -> PathBuf {
     env::var_os("PADBRIDGE_RUNTIME_DIR")
         .map(PathBuf::from)
@@ -82,11 +133,13 @@ pub(crate) fn sandbox(network: bool) -> Result<Command> {
 
 pub(crate) fn translate(version: &Path, runtime: &Path) -> Result<()> {
     let cache_version = format!(
-        "{}:{}:{}:{}",
+        "{}:{}:{}:{}:{}:{}",
         env!("CARGO_PKG_VERSION"),
         apk::digest(&runtime.join("translate.py"))?,
         apk::digest(&runtime.join("resources.py"))?,
-        apk::digest(&runtime.join("framework.jar"))?
+        apk::digest(&runtime.join("framework.jar"))?,
+        apk::digest(&runtime.join("dex_fixes.py"))?,
+        apk::digest(&runtime.join("constructor-repair.jar"))?
     );
     if version.join("classes.jar").exists()
         && fs::read_to_string(version.join("cache-version")).unwrap_or_default() == cache_version
@@ -170,8 +223,7 @@ pub fn run(
         diagnostic["dex_errors"]
             .as_array()
             .map(|v| v.is_empty())
-            .unwrap_or(false)
-            && diagnostic["native_abi_supported"] == true,
+            .unwrap_or(false),
         "Unsupported APK: {diagnostic}"
     );
     let runtime = share()
@@ -193,6 +245,7 @@ pub fn run(
     let network = grants
         .iter()
         .any(|p| p == "android.permission.INTERNET" && app.permissions.contains(p));
+    let certificates = crate::certificates::current(manager, package)?;
     let log_path = manager.root.join("logs").join(format!("{package}.log"));
     let mut attempts = 0;
     loop {
@@ -201,7 +254,22 @@ pub fn run(
         cmd.arg("--ro-bind").arg(&runtime).arg("/runtime");
         cmd.arg("--ro-bind").arg(&version).arg("/app");
         cmd.arg("--bind").arg(&data).arg("/data");
+        if let Some(ref path) = certificates {
+            cmd.arg("--ro-bind").arg(path).arg("/certificates");
+            cmd.args(["--setenv","JAVA_TOOL_OPTIONS","-Djavax.net.ssl.trustStore=/certificates/cacerts -Djavax.net.ssl.trustStorePassword=changeit","--setenv","PADBRIDGE_CA_BUNDLE","/certificates/ca-bundle.pem"]);
+        }
         cmd.arg("--ro-bind").arg(native.path()).arg("/native");
+        cmd.args(["--setenv", "LD_LIBRARY_PATH", "/native"]);
+        // A bounded playback-only protocol; the APK cannot connect to host audio capture.
+        let broker = PlaybackBroker::start(&runtime, &log_path.with_extension("audio.log"))?;
+        cmd.arg("--ro-bind")
+            .arg(broker.socket())
+            .arg("/run/padbridge/playback.sock");
+        cmd.args([
+            "--setenv",
+            "PADBRIDGE_AUDIO_SOCKET",
+            "/run/padbridge/playback.sock",
+        ]);
         if headless {
             cmd.args(["--setenv", "PADBRIDGE_HEADLESS", "1"]);
         }

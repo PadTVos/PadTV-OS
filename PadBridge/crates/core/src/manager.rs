@@ -159,6 +159,7 @@ impl Manager {
         fs::rename(&folder, tomb.path().join("removed"))?;
         if delete_data {
             safe_remove(&self.root.join("data").join(package))?;
+            safe_remove(&self.root.join("certificates").join(package))?;
         }
         let grants = self
             .root

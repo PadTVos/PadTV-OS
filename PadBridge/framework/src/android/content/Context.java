@@ -14,7 +14,8 @@ public abstract class Context {
     }
     public FileInputStream openFileInput(String name) throws FileNotFoundException { return new FileInputStream(file(name)); }
     public AssetManager getAssets() { return new AssetManager(); }
-    public Context getApplicationContext() { return this; }
+    public Context getApplicationContext() { return org.padtv.bridge.Host.application==null?this:org.padtv.bridge.Host.application; }
+    public void registerComponentCallbacks(ComponentCallbacks c){org.padtv.bridge.Host.application.registerComponentCallbacks(c);}public void unregisterComponentCallbacks(ComponentCallbacks c){org.padtv.bridge.Host.application.unregisterComponentCallbacks(c);}
     public android.content.res.Resources getResources(){if(resources==null)resources=new android.content.res.Resources();return resources;}
     public String getString(int id){return getResources().getString(id);}public String getString(int id,Object... args){return getResources().getString(id,args);}public CharSequence getText(int id){return getResources().getText(id);}
     public SharedPreferences getSharedPreferences(String name,int mode){if(mode!=MODE_PRIVATE)throw new UnsupportedOperationException("Only private preferences supported");return org.padtv.bridge.Preferences.open(name);}

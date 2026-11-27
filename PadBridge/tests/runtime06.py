@@ -37,7 +37,10 @@ class NativeCompatibilityTests(unittest.TestCase):
         app=self.call('install',OUT/'audio.apk')['app']
         self.call('run',app['package'],'--headless',ok=False)
         r=self.call('analyze',OUT/'audio.apk')
-        self.assertIn('android/media/AudioTrack',r['static']['missing_classes'])
+        # AudioTrack is implemented in 0.4; this original APK still requests an
+        # unimplemented native device query. Preserve the diagnostic regression.
+        self.assertNotIn('android/media/AudioTrack',r['static']['missing_classes'])
+        self.assertTrue(any('AudioTrack.getNativeOutputSampleRate(I)I' in m for m in r['static']['missing_methods']))
         self.assertTrue(r['observed_runtime_errors']);self.assertTrue(r['runtime_log_matches_installed_build'])
     def test_analyzer_multidex_and_no_false_missing_app_classes(self):
         r=self.call('analyze',OUT/'java-multidex.apk')

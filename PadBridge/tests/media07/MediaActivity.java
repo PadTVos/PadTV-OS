@@ -1,0 +1,29 @@
+package org.padtv.mediaprobe;
+import android.app.Activity;
+import android.os.Bundle;
+import android.media.*;
+import android.view.*;
+import java.io.*;
+import java.nio.*;
+import java.util.*;
+/** Compiled against the Android SDK, never against PadBridge's framework. */
+public class MediaActivity extends Activity {
+ private MediaPlayer player;private boolean controls;private int completions;
+ private String read(String n)throws Exception{try(Scanner s=new Scanner(openFileInput(n),"UTF-8")){return s.nextLine();}}
+ protected void onCreate(Bundle state){super.onCreate(state);try{String mode=read("mode.txt");String source=read("source.txt");if(mode.equals("player")||mode.equals("controls")){controls=mode.equals("controls");play(source);return;}if(mode.equals("https")){try(InputStream in=new java.net.URL(source).openStream()){byte[] bytes=new byte[128];int n=in.read(bytes);System.out.println("HTTPS_BODY="+new String(bytes,0,n,"UTF-8"));}return;}decode(source,mode.equals("audio"));}catch(Exception e){throw new IllegalStateException(e);}}
+ private void decode(String path,boolean sound)throws Exception {
+  MediaExtractor ex=new MediaExtractor();ex.setDataSource(path);if(ex.getTrackCount()!=2)throw new AssertionError("Track count");
+  Map<Integer,MediaCodec> codecs=new HashMap<Integer,MediaCodec>();Map<Integer,AudioTrack> audio=new HashMap<Integer,AudioTrack>();Set<Integer> done=new HashSet<Integer>();
+  FileOutputStream rgba=openFileOutput("decoded.rgba",0),pcm=openFileOutput("decoded.pcm",0);int frames=0,samples=0;long first=-1,last=-1;
+  try{for(int i=0;i<ex.getTrackCount();i++){MediaFormat f=ex.getTrackFormat(i);System.out.println("TRACK="+f);MediaCodec c=MediaCodec.createDecoderByType(f.getString("mime"));c.configure(f,null,null,0);c.start();codecs.put(i,c);ex.selectTrack(i);}
+   int iterations=0;while(done.size()<codecs.size()){if(++iterations>10000)throw new AssertionError("Decoder did not reach EOS");int track=ex.getSampleTrackIndex();for(int i:codecs.keySet()){MediaCodec c=codecs.get(i);if(done.contains(i))continue;if(track<0||track==i){int b=c.dequeueInputBuffer(0);if(b>=0){ByteBuffer input=c.getInputBuffer(b);int n=track<0?-1:ex.readSampleData(input,0);c.queueInputBuffer(b,0,Math.max(0,n),Math.max(0,ex.getSampleTime()),n<0?4:0);if(track>=0)ex.advance();}}
+    MediaCodec.BufferInfo info=new MediaCodec.BufferInfo();int out;while((out=c.dequeueOutputBuffer(info,0))!=-1){if(out==-2){MediaFormat f=c.getOutputFormat();if(sound&&f.getString("mime").startsWith("audio/")){AudioTrack a=new AudioTrack(3,f.getInteger("sample-rate"),f.getInteger("channel-count")==1?4:12,2,19200,1);a.play();audio.put(i,a);}continue;}if(out<0)continue;boolean video=c.getOutputFormat().getString("mime").startsWith("video/");ByteBuffer data=c.getOutputBuffer(out);byte[] bytes=new byte[data.remaining()];data.get(bytes);if(bytes.length>0){if(video){rgba.write(bytes);frames++;if(first<0)first=info.presentationTimeUs;last=info.presentationTimeUs;}else{pcm.write(bytes);samples+=bytes.length/2;if(sound&&audio.get(i).write(bytes,0,bytes.length)!=bytes.length)throw new AssertionError("Audio write");}}c.releaseOutputBuffer(out,false);if((info.flags&4)!=0){done.add(i);break;}}
+   }}
+   for(AudioTrack a:audio.values()){a.pause();int paused=a.getPlaybackHeadPosition();Thread.sleep(50);if(a.getPlaybackHeadPosition()!=paused)throw new AssertionError("Audio pause moved");a.play();a.stop();}
+   System.out.println("MEDIA_DECODE_OK frames="+frames+" pcm_samples="+samples+" first="+first+" last="+last);if(sound)System.out.println("AUDIO_OUTPUT_OK");
+  }finally{rgba.close();pcm.close();for(AudioTrack a:audio.values())a.release();for(MediaCodec c:codecs.values())c.release();ex.release();}
+ }
+ private void play(final String source){SurfaceView view=new SurfaceView(this);view.setLayoutParams(new android.view.ViewGroup.LayoutParams(-1,-1));view.getHolder().addCallback(new SurfaceHolder.Callback(){public void surfaceCreated(SurfaceHolder h){try{player=new MediaPlayer();player.setDisplay(h);player.setDataSource(source);player.setOnPreparedListener(new MediaPlayer.OnPreparedListener(){public void onPrepared(MediaPlayer p){System.out.println("PLAYER_PREPARED "+p.getDuration());p.start();if(controls)exerciseControls(p);}});player.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){public void onCompletion(MediaPlayer p){System.out.println("PLAYER_COMPLETED "+p.getCurrentPosition());if(controls&&++completions==1){p.start();return;}try(FileOutputStream f=openFileOutput("completed.txt",0)){f.write((controls?"PAUSE_SEEK_REPLAY_COMPLETE":"REAL_AV_COMPLETE").getBytes("UTF-8"));}catch(Exception e){throw new IllegalStateException(e);}}});player.setOnErrorListener(new MediaPlayer.OnErrorListener(){public boolean onError(MediaPlayer p,int what,int extra){throw new IllegalStateException("PLAYER_ERROR "+what+" "+extra);}});player.prepareAsync();}catch(Exception e){throw new IllegalStateException(e);}}public void surfaceChanged(SurfaceHolder h,int f,int w,int h2){}public void surfaceDestroyed(SurfaceHolder h){if(player!=null)player.release();}});setContentView(view);}
+ private void exerciseControls(final MediaPlayer p){final android.os.Handler h=new android.os.Handler();p.setOnSeekCompleteListener(new MediaPlayer.OnSeekCompleteListener(){public void onSeekComplete(MediaPlayer v){System.out.println("PLAYER_SEEK_CONFIRMED");}});h.postDelayed(new Runnable(){public void run(){p.pause();h.postDelayed(new Runnable(){public void run(){final int before=p.getCurrentPosition();h.postDelayed(new Runnable(){public void run(){if(p.isPlaying()||before!=p.getCurrentPosition())throw new AssertionError("Paused player advanced");System.out.println("PLAYER_PAUSE_FROZEN");p.seekTo(400);p.start();}},150);}},100);}},200);}
+ protected void onDestroy(){if(player!=null)player.release();super.onDestroy();}
+}

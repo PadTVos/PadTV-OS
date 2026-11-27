@@ -8,6 +8,8 @@ import java.util.List;
 
 public final class Host {
     public static String packageName;
+    public static android.app.Application application;
+    private static final class AppContext extends android.content.Context {}
     private static Activity activity;
     private static final java.util.ArrayDeque<Activity> stack=new java.util.ArrayDeque<Activity>();
     public static boolean finished;
@@ -31,6 +33,7 @@ public final class Host {
     }
     public static void handleKey(int key) {
         if (activity.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN,key))) return;
+        if (focusView!=null&&focusView.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN,key))) return;
         if(key==KeyEvent.KEYCODE_BACK){activity.onBackPressed();return;}
         refreshFocus();
         if (buttons.isEmpty()) return;
@@ -50,6 +53,11 @@ public final class Host {
             android.os.Looper.prepareMainLooper();
             if(args[2].equals("headless"))System.setProperty("padbridge.headless","true");
             packageName=args[1];
+            org.w3c.dom.Element appNode=(org.w3c.dom.Element)Manifest.get().getElementsByTagName("application").item(0);
+            String appClass=appNode==null?"":appNode.getAttribute("name");
+            application=appClass.isEmpty()?new android.app.Application():(android.app.Application)Class.forName(Manifest.className(appClass)).getDeclaredConstructor().newInstance();
+            application.bridgeAttach(new AppContext());
+            application.onCreate();
             activity=(Activity)Class.forName(args[0]).getDeclaredConstructor().newInstance();
             activity.bridgeStart();
             if (args[2].equals("headless")) {
@@ -58,7 +66,11 @@ public final class Host {
                 java.io.File keys=new java.io.File("/data/test-keys.txt");
                 if (keys.isFile()) for(String key:new String(java.nio.file.Files.readAllBytes(keys.toPath()),"UTF-8").trim().split(","))
                     if (!key.isEmpty()) handleKey(Integer.parseInt(key));
-                long deadline=android.os.SystemClock.uptimeMillis()+500;
+                long testDuration=500;
+                java.nio.file.Path durationFile=java.nio.file.Paths.get("/data/test-duration-ms.txt");
+                if(java.nio.file.Files.isRegularFile(durationFile))testDuration=Long.parseLong(new String(java.nio.file.Files.readAllBytes(durationFile),"UTF-8").trim());
+                if(testDuration<500||testDuration>10000)throw new IllegalArgumentException("Headless test duration limit");
+                long deadline=android.os.SystemClock.uptimeMillis()+testDuration;
                 do { Native.layoutScene(1280,720);pump();Thread.sleep(5); } while(android.os.SystemClock.uptimeMillis()<deadline);
                 System.out.println("PADBRIDGE_SCENE="+Native.snapshot());
             } else Native.run();

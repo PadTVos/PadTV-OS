@@ -16,4 +16,4 @@ install -m 644 "$bridge_root/build/runtime/host-api.json" "$bridge_stage/usr/lib
 install -m 644 "$bridge_root/README.md" "$bridge_root/THIRD_PARTY.md" "$bridge_root/LICENSE" "$bridge_stage/usr/share/doc/padbridge/"
 install -d "$bridge_stage/usr/share/padbridge/examples"
 install -m 644 "$bridge_root/build/fixtures/basic.apk" "$bridge_stage/usr/share/padbridge/examples/"
-dpkg-deb --root-owner-group --build "$bridge_stage" "$bridge_output/padbridge_0.3.0_amd64.deb"
+dpkg-deb --root-owner-group --build "$bridge_stage" "$bridge_output/padbridge_0.4.0_amd64.deb"
