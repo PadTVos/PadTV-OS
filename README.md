@@ -1,36 +1,34 @@
-# PadTV 0.7 – Android Runtime & Multimedia
+# PadTV 0.8 – Android Runtime Integration
 
 Samostatná televizní distribuce založená na **Debianu 13**, pro PC a mini PC
-**amd64** připojené přes HDMI. Vydání systému: 0.7; balíčky: 0.7.0; PadBridge: 0.4.0 (experimentální).
+**amd64** připojené přes HDMI. Vydání systému: 0.8; balíčky: 0.8.0; PadBridge: 0.5.0 (experimentální).
 Rozhraní Liquid Glass vychází z dodaného návrhu a zachovává logo i pozadí.
 
 ## PadBridge v této verzi
 
-Vlastní experimentální překladová vrstva v Rustu spouští základní podepsaná APK
-přes DEX → JVM a vlastní Android API, bez Android systému. Ve Store zvolte
-**Ukázka PadBridge** pro vlastní testovací APK nebo **Instalovat APK** pro místní APK, více split APK nebo vybranou sadu `.apks`.
-Nově je ověřené neupravené APK **Screen Test 4K 1.0.1 od LuoJuly**:
-vykreslování přes Canvas, barevné plochy, bitmapová šachovnice a ovládání šipkami.
-Waydroid byl během testu vypnutý. Store skutečně stahuje vlastní testovací APK
-z GitHub Releases a před instalací ověřuje hash a podpis. Jsou zapojené dodané
-ikony PadTV-V6 a odstraněné reklamní úvodní texty Store.
-PadBridge 0.4 přidává skutečné MediaExtractor/MediaCodec/AudioTrack/MediaPlayer
-přes FFmpeg a omezený zvukový broker, SurfaceView, EGL/GLES přes Mesa,
-WebView přes izolované Chromium a správu certifikátů pro jednotlivé aplikace.
-Tyto komponenty mají integrační testy vykonávající originální DEX testovacích APK.
-**Jellyfin, YouTube TV a Netflix zatím nejsou funkční přes PadBridge.**
-Instalace APK není důkazem funkčního rozhraní nebo přehrávání. Stav konkrétních
-verzí, chyby a další kroky uvádí [ověření 0.7](docs/validation-0.7.md).
-Nejde o plný Bionic, ART, Android framework ani certifikované zařízení.
-Stávající webové aplikace a oddělený Waydroid jsou zachované, ale nejsou použité
-jako náhrada nebo důkaz kompatibility Android APK.
+PadBridge 0.5 přidává skutečný backend **AOSP ART** s odpovídajícím libcore,
+boot DEX a boot image. Vykonává původní kód APK bez Android systému, Waydroidu
+nebo náhradní webové aplikace. Enjarify / OpenJDK zůstává alternativou a výchozí
+volbou pro dosud funkční aplikace. Ve správě aplikace lze vybrat runtime;
+první příprava ART stáhne přibližně 591 MB z původního zdroje projektu R8.
+
+**Hlavní milník Jellyfinu zatím splněný není.** Originální Jellyfin Android TV
+0.20.1 vykonává inicializační kód, ale stále selhává na neúplném Android
+frameworku. Jeho GUI, připojení k serveru a přehrávání nebyly úspěšně ověřeny.
+YouTube TV a Netflix také nejsou funkční. Úspěšné testy ART a vlastních APK
+nejsou důkazem kompatibility těchto aplikací.
+
+Nové funkce zahrnují události layoutu a oken, směrové okraje, část témat a
+typovaných resources, životní cyklus ContentProvider, původní utility AOSP
+a diagnostiku jednotlivých fází startu. Stávající Store, ikony V6 a funkce
+Enjarify jsou zachované. Přesné hranice uvádí [ověření 0.8](docs/validation-0.8.md)
+a [implementace PadBridge 0.5](PadBridge/docs/runtime-0.5.md).
 
 [Samostatný PadBridge](https://github.com/PadTVos/PadBridge) ·
-[Stav implementace 0.4](PadBridge/docs/runtime-0.4.md) ·
 [Podporované API](PadBridge/docs/api.md)
 
-Zdroj v adresáři `PadBridge/` je vydaná kopie samostatného projektu, aby šlo OS
-sestavit z jednoho checkoutu. Export obou repozitářů vychází ze stejných souborů.
+Zdroj v adresáři `PadBridge/` je stejná kopie jako v samostatném repozitáři.
+Původní instalační soubory cizích aplikací se do repozitářů ani ISO nepřidávají.
 
 ## Součásti
 
@@ -40,20 +38,24 @@ sestavit z jednoho checkoutu. Export obou repozitářů vychází ze stejných s
 - Síť přes NetworkManager, Bluetooth přes BlueZ, zvuk přes PipeWire, obraz přes wlroots.
 - Vypnutí, restart a uspání přes systemd-logind. Rozlišení s návratem po 15 sekundách bez potvrzení.
 - Grafický instalátor Calamares pro BIOS a UEFI.
-- Odinstalovatelný předinstalovaný YouTube jako webová aplikace, prohlížeč, soubory a Waydroid s instalací APK.
+- Zachovaná odinstalovatelná webová položka YouTube, prohlížeč a soubory. Webová položka není testem Android TV APK.
 - Store se skutečnými APK z GitHub Releases, webovými aplikacemi, Flathubem, Google Play a přehledem Debian APT.
-- YouTube pro Android TV a Netflix pro Android TV v katalogu; instalaci dokončuje uživatel v oficiálním Google Play.
+- YouTube a Netflix pro Android TV v katalogu s odkazy na oficiální distribuci a přiznanými omezeními; PadBridge umožňuje instalovat lokální originální APK/APKM, jejich spuštění zatím selhává.
 - Stejné rozhraní ve vývojovém náhledu Windows.
+
+Waydroid není do tohoto ISO přidaný ani používaný jako náhrada PadBridge.
+Historický adaptér v projektu zůstává zachovaný, ale bez externě připraveného
+Waydroidu není dostupný. Google Play není součástí ART.
 
 Skutečně provedené kontroly a zbývající zkoušky jsou v [protokolu ověření](docs/validation.md).
 
 ## Vyzkoušení
 
-ISO: `dist/padtv-0.7.0-amd64.iso`; vedle něj je SHA-256.
-Veřejné testovací vydání je v [GitHub Releases](https://github.com/PadTVos/PadTV-OS/releases/tag/v0.7.0).
+ISO: `dist/padtv-0.8.0-amd64.iso`; vedle něj je SHA-256.
+Veřejné testovací vydání je v [GitHub Releases](https://github.com/PadTVos/PadTV-OS/releases/tag/v0.8.0).
 Kvůli limitu velikosti obsahuje dvě části ISO a `Join-PadTV.ps1` pro jejich
 spojení a ověření. Místní ISO v `dist/` je již kompletní.
-Pro celý systém ve Windows použijte zástupce **PadTV 0.7 Android Runtime & Multimedia – virtuální PC**:
+Pro celý systém ve Windows použijte zástupce **PadTV 0.8 Android Runtime Integration – virtuální PC**:
 
 ```powershell
 .\.venv\Scripts\python.exe scripts/run-vm.py
@@ -95,8 +97,8 @@ Delete, Menu nebo pravé tlačítko na uživatelské aplikaci otevře její spr�
 Fungují multimediální klávesy hlasitosti; HDMI-CEC zatím nemá vlastní integraci.
 
 Store uvádí skutečný zdroj aplikace. Flathub používá instalaci `--user`; ikona
-vznikne až po ověřené instalaci. APT spravuje systémové součásti. GitHub a komunitní
-zdroj zatím nejsou připojené jako automatické zdroje instalace.
+vznikne až po ověřené instalaci. APT spravuje systémové součásti. GitHub poskytovatel instaluje ověřené APK z konkrétních vydání; obecný komunitní
+zdroj zatím připojený není.
 
 YouTube lze odinstalovat ve Store nebo ve správě aplikací včetně jeho profilu.
 Při dalším startu se sám nevrátí; znovu jej přidáte ve Store. Předinstalovaný
@@ -165,5 +167,5 @@ přihlášení a přepínač `-Publish`. Lokální export není založení organ
 - [Stav ověření](docs/validation.md)
 - [Historické ověření 0.3.1](docs/validation-0.3.1.md)
 
-Pro sestavení 0.7 nainstalujte i [sestavovací závislosti PadBridge](PadBridge/README.md).
+Pro sestavení 0.8 nainstalujte i [sestavovací závislosti PadBridge](PadBridge/README.md).
 `build-iso.sh` sestavuje také samostatný balíček `padbridge`.

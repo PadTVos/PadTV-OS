@@ -1,6 +1,6 @@
 """User-installed apps. Defaults are seeded once, never resurrected after removal."""
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 import json
 import os
 from pathlib import Path
@@ -23,6 +23,7 @@ class UserApp:
     symbol: str = "android"
     color: str = "#a8e4c0"
     icon_path: str = ""
+    runtime_backend: str = ""
 
 
 YOUTUBE = UserApp("youtube", "YouTube", "web", "https://www.youtube.com/", "play", "#ff303f")
@@ -37,6 +38,8 @@ def default_data_dir(preview=False):
 
 
 def validate_app(app):
+    if app.runtime_backend not in ('', 'enjarify-openjdk', 'aosp-art') or (app.runtime_backend and app.kind != 'padbridge'):
+        raise ValueError("Neplatný backend aplikace.")
     if not APP_ID.fullmatch(app.id) or app.id in (".", ".."):
         raise ValueError("Neplatný identifikátor aplikace.")
     if not app.title.strip() or len(app.title) > 120:
@@ -70,6 +73,11 @@ class AppLibrary:
 
     def install(self, app):
         validate_app(app)
+        # Catalog refreshes must not reset an explicitly selected runtime.
+        if app.kind == 'padbridge' and not app.runtime_backend:
+            previous = next((p for p in self.list() if p.id == app.id and p.target == app.target), None)
+            if previous:
+                app = replace(app, runtime_backend=previous.runtime_backend)
         fd, name = tempfile.mkstemp(prefix=".app-", dir=self.manifests)
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as stream:
@@ -109,7 +117,8 @@ class AppLibrary:
     def command(self, app):
         validate_app(app)
         if app.kind == "padbridge":
-            return ("padbridge", "run", app.target, "--restart-once")
+            command = ("padbridge", "run", app.target, "--restart-once")
+            return command + (("--backend", app.runtime_backend) if app.runtime_backend else ())
         if app.kind == "android":
             return ("padtv-android", "launch", app.target)
         if app.kind == "flatpak":

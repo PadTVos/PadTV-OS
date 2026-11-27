@@ -3,6 +3,13 @@ import java.io.*;
 import android.content.res.AssetManager;
 public abstract class Context {
     private android.content.res.Resources resources;
+    private android.content.res.Resources.Theme theme;
+    public android.content.res.Resources.Theme getTheme(){if(theme==null)theme=getResources().newTheme();return theme;}
+    public void setTheme(int id){getTheme().applyStyle(id,true);}
+    public android.content.res.TypedArray obtainStyledAttributes(int[] attrs){return getTheme().obtainStyledAttributes(attrs);}
+    public android.content.res.TypedArray obtainStyledAttributes(int style,int[] attrs){return getTheme().obtainStyledAttributes(style,attrs);}
+    public android.content.res.TypedArray obtainStyledAttributes(android.util.AttributeSet set,int[] attrs){return getTheme().obtainStyledAttributes(set,attrs,0,0);}
+    public android.content.res.TypedArray obtainStyledAttributes(android.util.AttributeSet set,int[] attrs,int defAttr,int defRes){return getTheme().obtainStyledAttributes(set,attrs,defAttr,defRes);}
     public static final int MODE_PRIVATE=0;
     public String getPackageName() { return org.padtv.bridge.Host.packageName; }
     public File getFilesDir() { File f=new File("/data/files"); if (!f.isDirectory()&&!f.mkdirs()) throw new IllegalStateException("Cannot create app files directory"); return f; }
@@ -24,6 +31,7 @@ public abstract class Context {
     public android.content.pm.PackageManager getPackageManager(){return new android.content.pm.PackageManager();}
     public android.content.pm.ApplicationInfo getApplicationInfo(){try{return getPackageManager().getApplicationInfo(getPackageName(),0);}catch(android.content.pm.PackageManager.NameNotFoundException e){throw new IllegalStateException(e);}}
     public ClassLoader getClassLoader(){return getClass().getClassLoader();}
+    public android.os.Looper getMainLooper(){return android.os.Looper.getMainLooper();}
     public void startActivity(Intent i){org.padtv.bridge.Host.launch(this,i);}
     public ComponentName startService(Intent i){return org.padtv.bridge.Components.start(this,i);}
     public boolean stopService(Intent i){return org.padtv.bridge.Components.stop(org.padtv.bridge.Components.target(this,i));}

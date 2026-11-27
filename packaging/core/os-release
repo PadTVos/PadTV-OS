@@ -1,12 +1,12 @@
-PRETTY_NAME="PadTV 0.7 – Android Runtime & Multimedia"
+PRETTY_NAME="PadTV 0.8 – Android Runtime Integration"
 NAME="PadTV"
-VERSION_ID="0.7"
-VERSION="0.7 (Android Runtime & Multimedia)"
+VERSION_ID="0.8"
+VERSION="0.8 (Android Runtime Integration)"
 VERSION_CODENAME=trixie
 ID=padtv
 ID_LIKE=debian
-BUILD_ID="0.7.0"
-VARIANT="Android Runtime & Multimedia"
+BUILD_ID="0.8.0"
+VARIANT="Android Runtime Integration"
 VARIANT_ID=android-runtime
 DEBIAN_VERSION="13"
 LOGO=padtv

@@ -12,7 +12,7 @@ public class LayoutInflater {
     public void setFactory2(Factory2 f){setFactory(f);factory2=f;}public Factory getFactory(){return factory;}public Factory2 getFactory2(){return factory2;}public Context getContext(){return context;}
     private final Context context;public LayoutInflater(Context c){context=c;}public static LayoutInflater from(Context c){return new LayoutInflater(c);}
     public View inflate(int resource,ViewGroup root){return inflate(resource,root,root!=null);}
-    public View inflate(int resource,ViewGroup root,boolean attach){try(InputStream input=context.getResources().bridgeLayout(resource)){DocumentBuilderFactory factory=DocumentBuilderFactory.newInstance();factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl",true);factory.setFeature("http://xml.org/sax/features/external-general-entities",false);factory.setFeature("http://xml.org/sax/features/external-parameter-entities",false);View view=element(factory.newDocumentBuilder().parse(input).getDocumentElement(),0,root);if(attach){if(root==null)throw new IllegalArgumentException("Attach requires root");root.addView(view);return root;}return view;}catch(RuntimeException e){throw e;}catch(Exception e){throw new IllegalStateException("Layout inflation failed",e);}}
+    public View inflate(int resource,ViewGroup root,boolean attach){try(InputStream input=context.getResources().bridgeLayout(resource)){View view=element(org.padtv.bridge.Xml.parse(input).getDocumentElement(),0,root);if(attach){if(root==null)throw new IllegalArgumentException("Attach requires root");root.addView(view);return root;}return view;}catch(RuntimeException e){throw e;}catch(Exception e){throw new IllegalStateException("Layout inflation failed",e);}}
     private int id(String value){return context.getResources().getIdentifier(value,null,context.getPackageName());}
     private String resolve(String value){return value.startsWith("@")?context.getString(id(value)):value;}
     private int size(String value){if(value.isEmpty()||value.equals("wrap_content")||value.equals("-2"))return -2;if(value.equals("match_parent")||value.equals("fill_parent")||value.equals("-1"))return -1;return Math.round(Float.parseFloat(resolve(value).replaceAll("(dp|dip|px|sp)$","")));}
@@ -24,7 +24,14 @@ public class LayoutInflater {
         View v=factory2!=null?factory2.onCreateView(parent,tag,context,attrs):factory==null?null:factory.onCreateView(tag,context,attrs);
         if(v==null){Class<?> type=Class.forName(cls);try{v=(View)type.getConstructor(Context.class,android.util.AttributeSet.class).newInstance(context,attrs);}catch(NoSuchMethodException missing){v=(View)type.getConstructor(Context.class).newInstance(context);}}
         if(e.hasAttribute("id"))v.setId(id(e.getAttribute("id")));
-        v.setLayoutParams(new ViewGroup.LayoutParams(size(e.getAttribute("layout_width")),size(e.getAttribute("layout_height"))));
+        int w=size(e.getAttribute("layout_width")),h=size(e.getAttribute("layout_height"));
+        ViewGroup.MarginLayoutParams params=parent instanceof LinearLayout?new LinearLayout.LayoutParams(w,h):parent instanceof FrameLayout?new FrameLayout.LayoutParams(w,h):new ViewGroup.MarginLayoutParams(w,h);
+        int margin=e.hasAttribute("layout_margin")?size(e.getAttribute("layout_margin")):0;
+        params.setMargins(e.hasAttribute("layout_marginLeft")?size(e.getAttribute("layout_marginLeft")):margin,e.hasAttribute("layout_marginTop")?size(e.getAttribute("layout_marginTop")):margin,e.hasAttribute("layout_marginRight")?size(e.getAttribute("layout_marginRight")):margin,e.hasAttribute("layout_marginBottom")?size(e.getAttribute("layout_marginBottom")):margin);
+        if(e.hasAttribute("layout_marginStart"))params.setMarginStart(size(e.getAttribute("layout_marginStart")));if(e.hasAttribute("layout_marginEnd"))params.setMarginEnd(size(e.getAttribute("layout_marginEnd")));
+        v.setLayoutParams(params);
+        int pad=e.hasAttribute("padding")?size(e.getAttribute("padding")):0;
+        v.setPadding(e.hasAttribute("paddingLeft")?size(e.getAttribute("paddingLeft")):pad,e.hasAttribute("paddingTop")?size(e.getAttribute("paddingTop")):pad,e.hasAttribute("paddingRight")?size(e.getAttribute("paddingRight")):pad,e.hasAttribute("paddingBottom")?size(e.getAttribute("paddingBottom")):pad);
         if(v instanceof LinearLayout){String o=e.getAttribute("orientation");((LinearLayout)v).setOrientation(o.equals("vertical")||o.equals("1")?1:0);}
         if(e.hasAttribute("text")){if(!(v instanceof TextView))throw new UnsupportedOperationException("text on non TextView");((TextView)v).setText(resolve(e.getAttribute("text")));}
         if(e.hasAttribute("src")&&v instanceof ImageView)((ImageView)v).setImageResource(id(e.getAttribute("src")));

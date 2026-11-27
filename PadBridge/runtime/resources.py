@@ -1,7 +1,7 @@
 """Bounded Android binary XML / basic resource table decoder.
 
 Format: AOSP frameworks/base/libs/androidfw/include/androidfw/ResourceTypes.h.
-Independent implementation. Complex bags/styles remain explicit unsupported data.
+Independent bounded implementation including style/map entries.
 """
 import base64
 import struct
@@ -46,7 +46,8 @@ def strings(b):
 
 def value(kind,data,pool):
     if kind==3:return pool[data]
-    if kind in (1,2):return '@0x%08x'%data
+    if kind in (1,2):return ('@' if kind==1 else '?')+'0x%08x'%data
+    if kind==4:return str(struct.unpack('<f',struct.pack('<I',data))[0])
     if kind==0x12:return 'true' if data else 'false'
     if 0x1c<=kind<=0x1f:return '#%08x'%data
     if kind==5:
@@ -70,6 +71,8 @@ def xml(data):
             for i in range(count):
                 p=start+i*size;name=pool[u32(b,p+4)];raw=u32(b,p+8)
                 node.set(name,pool[raw] if raw!=0xffffffff else value(b[p+15],u32(b,p+16),pool))
+                if tag=='meta-data' and name in ('value','resource'):
+                    node.set('padbridge-type-'+name,str(b[p+15]))
             if stack:stack[-1].append(node)
             else:root=node
             stack.append(node)
@@ -79,9 +82,12 @@ def xml(data):
     if root is None or stack:raise ValueError('Incomplete XML')
     return ET.tostring(root,encoding='utf-8')
 
-def table(data):
+def table(data,typed=False):
     if len(data)<12 or u16(data,0)!=2 or u16(data,2)!=12 or u32(data,4)!=len(data):raise ValueError('Invalid Android resource table header')
     global_pool=[];result={}
+    def scalar(kind,data):
+        text=value(kind,data,global_pool)
+        return ('!typed|%d|%d|%s'%(kind,data,base64.b64encode(text.encode()).decode())) if typed else text
     for kind,head,b in chunks(data,12):
         if kind==1:global_pool=strings(b)
         if kind!=0x200:continue
@@ -107,8 +113,20 @@ def table(data):
                 p=start+off;size=u16(c,p);entry_flags=u16(c,p+2);key=u32(c,p+4)
                 rid=(package<<24)|((typ+(u32(b,284) if head>=288 else 0))<<16)|index
                 if rid in result and not default:continue
-                if entry_flags&8:key=size;val=value(entry_flags>>8,u32(c,p+4),global_pool)
-                else:val='!unsupported-complex-resource' if entry_flags&1 else value(c[p+size+3],u32(c,p+size+4),global_pool)
+                if entry_flags&8:key=size;val=scalar(entry_flags>>8,u32(c,p+4))
+                elif entry_flags&1:
+                    if size<16 or p+size>len(c):raise ValueError('Invalid resource map header')
+                    parent=u32(c,p+8);items=u32(c,p+12)
+                    if items>16384 or p+size+items*12>len(c):raise ValueError('Resource map exceeds bounds')
+                    values=[];names=set()
+                    for item in range(items):
+                        pos=p+size+item*12;name=u32(c,pos)
+                        if name in names or u16(c,pos+4)!=8:raise ValueError('Invalid or duplicate resource map item')
+                        names.add(name)
+                        text=scalar(c[pos+7],u32(c,pos+8))
+                        values.append(str(name)+','+base64.b64encode(text.encode()).decode())
+                    val='!bag|'+str(parent)+'|'+'|'.join(values)
+                else:val=scalar(c[p+size+3],u32(c,p+size+4))
                 result[rid]=(types[typ-1],keys[key],val)
     return result
 
@@ -116,7 +134,7 @@ def write(sources,output):
     resources={};seen=set()
     for source in sources:
         if 'resources.arsc' in source.namelist():
-            for key,val in table(source.read('resources.arsc')).items():
+            for key,val in table(source.read('resources.arsc'),typed=True).items():
                 # Base wins for configuration splits; dynamic feature IDs can add entries.
                 resources.setdefault(key,val)
         for name in source.namelist():

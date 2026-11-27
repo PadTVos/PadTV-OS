@@ -9,6 +9,7 @@ mod media;
 mod native_elf;
 mod runtime;
 mod secure_media;
+mod startup;
 
 use anyhow::{bail, Context, Result};
 use serde_json::{json, Value};
@@ -63,6 +64,27 @@ fn dispatch() -> Result<Value> {
             Ok(json!({"ok":true,"app":set.app,"diagnostics":dex::diagnose_set(&set.paths)?}))
         }
         "backends" => Ok(json!({"ok":true,"backends":backends::list()})),
+        "setup-art" => {
+            manager.unlock()?;
+            let mut command = std::process::Command::new("/usr/bin/python3");
+            command
+                .arg(runtime::share().join("art_runtime.py"))
+                .arg("setup")
+                .arg("--root")
+                .arg(backends::art_root());
+            if let Some(index) = args.iter().position(|value| value == "--archive") {
+                command.arg("--archive").arg(arg(index + 1)?);
+            }
+            let output = command.output().context("ART setup could not start")?;
+            if !output.status.success() {
+                bail!(
+                    "ART setup failed: {} {}",
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                );
+            }
+            Ok(serde_json::from_slice(&output.stdout)?)
+        }
         "certificates" => certificates::list(&manager, arg(1)?),
         "trust-certificate" => certificates::update(&manager, arg(1)?, "add", arg(2)?),
         "untrust-certificate" => certificates::update(&manager, arg(1)?, "remove", arg(2)?),
@@ -98,8 +120,16 @@ fn dispatch() -> Result<Value> {
                 .chars()
                 .rev()
                 .collect::<String>();
+            let trace_path = manager
+                .root
+                .join("logs")
+                .join(format!("{}.startup.json", app.package));
+            let trace = std::fs::read(trace_path)
+                .ok()
+                .filter(|v| v.len() <= 1024 * 1024)
+                .and_then(|v| serde_json::from_slice::<Value>(&v).ok());
             Ok(
-                json!({"ok":true,"app":app,"diagnostics":dex::diagnose_set(&paths)?,"last_error":tail}),
+                json!({"ok":true,"app":app,"diagnostics":dex::diagnose_set(&paths)?,"last_error":tail,"startup_trace":trace}),
             )
         }
         "remove" => manager.remove(arg(1)?, args.iter().any(|a| a == "--delete-data")),

@@ -23,6 +23,9 @@ struct Node {
     layout: i32,
     width: i32,
     height: i32,
+    margin: [i32; 4],
+    padding: [i32; 4],
+    scroll: [i32; 2],
     text: String,
     children: Vec<usize>,
     #[serde(skip)]
@@ -171,6 +174,50 @@ pub extern "system" fn Java_org_padtv_bridge_Native_size(
     }
 }
 #[no_mangle]
+pub extern "system" fn Java_org_padtv_bridge_Native_scroll(
+    mut env: JNIEnv,
+    _: JClass,
+    id: jint,
+    x: jint,
+    y: jint,
+) {
+    if !(-16384..=16384).contains(&x) || !(-16384..=16384).contains(&y) {
+        fail(&mut env, "Scroll offset exceeds bounds");
+        return;
+    }
+    if let Some(n) = scene().lock().unwrap().nodes.get_mut(id as usize) {
+        n.scroll = [x, y];
+    } else {
+        fail(&mut env, "Invalid view");
+    }
+}
+#[no_mangle]
+pub extern "system" fn Java_org_padtv_bridge_Native_insets(
+    mut env: JNIEnv,
+    _: JClass,
+    id: jint,
+    padding: jni::sys::jboolean,
+    left: jint,
+    top: jint,
+    right: jint,
+    bottom: jint,
+) {
+    let values = [left, top, right, bottom];
+    if values.iter().any(|v| !(-16384..=16384).contains(v)) {
+        fail(&mut env, "View insets exceed bounds");
+        return;
+    }
+    if let Some(n) = scene().lock().unwrap().nodes.get_mut(id as usize) {
+        if padding != 0 {
+            n.padding = values;
+        } else {
+            n.margin = values;
+        }
+    } else {
+        fail(&mut env, "Invalid view");
+    }
+}
+#[no_mangle]
 pub extern "system" fn Java_org_padtv_bridge_Native_text(
     mut env: JNIEnv,
     _: JClass,
@@ -286,6 +333,7 @@ fn key(key: Keycode) -> Option<i32> {
         Keycode::Right => Some(22),
         Keycode::Return | Keycode::Space => Some(23),
         Keycode::Escape | Keycode::Backspace => Some(4),
+        Keycode::F10 | Keycode::Application => Some(82),
         _ => None,
     }
 }
@@ -336,6 +384,16 @@ fn arrange(
         return Ok(());
     }
     result.push((id, area));
+    let area = Rect::new(
+        area.x() + n.padding[0],
+        area.y() + n.padding[1],
+        area.width()
+            .saturating_sub((n.padding[0] + n.padding[2]).max(0) as u32)
+            .max(1),
+        area.height()
+            .saturating_sub((n.padding[1] + n.padding[3]).max(0) as u32)
+            .max(1),
+    );
     let horizontal = n.layout == 0;
     let available = if horizontal {
         area.width()
@@ -350,6 +408,12 @@ fn arrange(
             continue;
         }
         let length = if horizontal { c.width } else { c.height };
+        fixed += (if horizontal {
+            c.margin[0] + c.margin[2]
+        } else {
+            c.margin[1] + c.margin[3]
+        })
+        .max(0) as u32;
         if length == -1 {
             fill += 1;
         } else {
@@ -378,6 +442,7 @@ fn arrange(
                 shared.max(1)
             } else {
                 area.width()
+                    .saturating_sub((c.margin[0] + c.margin[2]).max(0) as u32)
             },
             if horizontal {
                 measure(s, *child, true, depth + 1)?
@@ -391,6 +456,7 @@ fn arrange(
                 shared.max(1)
             } else {
                 area.height()
+                    .saturating_sub((c.margin[1] + c.margin[3]).max(0) as u32)
             },
             measure(s, *child, false, depth + 1)?,
         );
@@ -399,8 +465,8 @@ fn arrange(
                 s,
                 *child,
                 Rect::new(
-                    area.x() + if horizontal { offset } else { 0 },
-                    area.y() + if n.layout == 1 { offset } else { 0 },
+                    area.x() - n.scroll[0] + c.margin[0] + if horizontal { offset } else { 0 },
+                    area.y() - n.scroll[1] + c.margin[1] + if n.layout == 1 { offset } else { 0 },
                     width,
                     height,
                 ),
@@ -410,9 +476,9 @@ fn arrange(
         }
         if n.layout != 2 {
             offset += if horizontal {
-                width as i32 + 14
+                width as i32 + c.margin[0] + c.margin[2] + 14
             } else {
-                height as i32 + 14
+                height as i32 + c.margin[1] + c.margin[3] + 14
             };
         }
     }
@@ -450,6 +516,30 @@ fn run(env: &mut JNIEnv) -> Result<(), String> {
         }
         for event in events.poll_iter() {
             match event {
+                Event::Window {
+                    win_event: sdl2::event::WindowEvent::FocusGained,
+                    ..
+                } => {
+                    env.call_static_method(
+                        "org/padtv/bridge/Host",
+                        "windowFocus",
+                        "(Z)V",
+                        &[JValue::Bool(1)],
+                    )
+                    .map_err(|e| e.to_string())?;
+                }
+                Event::Window {
+                    win_event: sdl2::event::WindowEvent::FocusLost,
+                    ..
+                } => {
+                    env.call_static_method(
+                        "org/padtv/bridge/Host",
+                        "windowFocus",
+                        "(Z)V",
+                        &[JValue::Bool(0)],
+                    )
+                    .map_err(|e| e.to_string())?;
+                }
                 Event::Quit { .. } => break 'running,
                 Event::KeyDown {
                     keycode: Some(k), ..
@@ -457,9 +547,22 @@ fn run(env: &mut JNIEnv) -> Result<(), String> {
                     if let Some(code) = key(k) {
                         env.call_static_method(
                             "org/padtv/bridge/Host",
-                            "handleKey",
-                            "(I)V",
-                            &[JValue::Int(code)],
+                            "handleKeyAction",
+                            "(II)V",
+                            &[JValue::Int(code), JValue::Int(0)],
+                        )
+                        .map_err(|e| e.to_string())?;
+                    }
+                }
+                Event::KeyUp {
+                    keycode: Some(k), ..
+                } => {
+                    if let Some(code) = key(k) {
+                        env.call_static_method(
+                            "org/padtv/bridge/Host",
+                            "handleKeyAction",
+                            "(II)V",
+                            &[JValue::Int(code), JValue::Int(1)],
                         )
                         .map_err(|e| e.to_string())?;
                     }
@@ -518,21 +621,37 @@ fn run(env: &mut JNIEnv) -> Result<(), String> {
             &mut items,
             0,
         )?;
-        targets.clear();
-        canvas.set_draw_color(Color::RGB(13, 28, 29));
-        canvas.clear();
-        for (id, area) in items {
+        for (id, area) in &items {
             env.call_static_method(
                 "org/padtv/bridge/Host",
                 "layout",
-                "(III)V",
+                "(IIIII)V",
                 &[
-                    JValue::Int(id as i32),
+                    JValue::Int(*id as i32),
+                    JValue::Int(area.x()),
+                    JValue::Int(area.y()),
                     JValue::Int(area.width() as i32),
                     JValue::Int(area.height() as i32),
                 ],
             )
             .map_err(|e| e.to_string())?;
+        }
+        env.call_static_method("org/padtv/bridge/Host", "endLayout", "()V", &[])
+            .map_err(|e| e.to_string())?;
+        let draw = env
+            .call_static_method("org/padtv/bridge/Host", "drawFrame", "()Z", &[])
+            .map_err(|e| e.to_string())?
+            .z()
+            .map_err(|e| e.to_string())?;
+        if !draw {
+            std::thread::sleep(std::time::Duration::from_millis(16));
+            continue;
+        }
+        let state = scene().lock().unwrap().clone();
+        targets.clear();
+        canvas.set_draw_color(Color::RGB(13, 28, 29));
+        canvas.clear();
+        for (id, area) in items {
             let node = &state.nodes[id];
             if node.kind == 2 {
                 canvas.set_draw_color(if id == state.focus {
@@ -622,9 +741,11 @@ pub extern "system" fn Java_org_padtv_bridge_Native_layoutScene(
         if let Err(e) = env.call_static_method(
             "org/padtv/bridge/Host",
             "layout",
-            "(III)V",
+            "(IIIII)V",
             &[
                 JValue::Int(id as i32),
+                JValue::Int(rect.x()),
+                JValue::Int(rect.y()),
                 JValue::Int(rect.width() as i32),
                 JValue::Int(rect.height() as i32),
             ],
@@ -632,6 +753,13 @@ pub extern "system" fn Java_org_padtv_bridge_Native_layoutScene(
             fail(&mut env, e);
             return;
         }
+    }
+    if let Err(e) = env.call_static_method("org/padtv/bridge/Host", "endLayout", "()V", &[]) {
+        fail(&mut env, e);
+        return;
+    }
+    if let Err(e) = env.call_static_method("org/padtv/bridge/Host", "drawFrame", "()Z", &[]) {
+        fail(&mut env, e);
     }
 }
 #[no_mangle]

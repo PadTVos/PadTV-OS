@@ -1,4 +1,4 @@
-> Historical 0.1 baseline below. Current implementation: [0.4 boundaries](runtime-0.4.md); current test evidence: [PadTV 0.7 validation](https://github.com/PadTVos/PadTV-OS/blob/main/docs/validation-0.7.md).
+> Historical 0.1 baseline below. Current implementation: [0.5 boundaries](runtime-0.5.md); current test evidence: [PadTV 0.8 validation](https://github.com/PadTVos/PadTV-OS/blob/main/docs/validation-0.8.md).
 
 # Implemented API surface
 

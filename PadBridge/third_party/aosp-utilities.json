@@ -1,0 +1,66 @@
+[
+  {
+    "file": "framework/src/android/util/TypedValue.java",
+    "source": "https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r15/core/java/android/util/TypedValue.java",
+    "sha256_upstream": "fb3cb9c6c0dfa5bfd517026eb563eab99e323b6541e559b39cfd810ad9c90636",
+    "sha256_vendored": "d8df9eace6568b9376bc891555c9dca411a8bcf20cd3e2093c7af12debcc7da0",
+    "license": "Apache-2.0",
+    "changes": "Only compile-time Android annotation imports/usages removed; method implementations unchanged"
+  },
+  {
+    "file": "framework/src/android/util/MathUtils.java",
+    "source": "https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r15/core/java/android/util/MathUtils.java",
+    "sha256_upstream": "027c9732087073e549816ccfa419d8d5d077c6e0630b04f50f746f21dd0b5509",
+    "sha256_vendored": "99eacc13d70d3799bb51f425ce92fc406bd0abed575da800b65e7f193a059bbc",
+    "license": "Apache-2.0",
+    "changes": "Only compile-time Android annotation imports/usages removed; method implementations unchanged"
+  },
+  {
+    "file": "framework/src/android/content/res/FontScaleConverter.java",
+    "source": "https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r15/core/java/android/content/res/FontScaleConverter.java",
+    "sha256_upstream": "1160241a40683d875e0d34b89c90431aa3b69e1af1639227af7113440526f744",
+    "sha256_vendored": "fc9b48af8f3bd5bb2bd25398c8ace59cfd717ea3dadf49fde9a9ff003a58694e",
+    "license": "Apache-2.0",
+    "changes": "Only compile-time Android annotation imports/usages removed; method implementations unchanged"
+  },
+  {
+    "file": "framework/src/android/util/Size.java",
+    "source": "https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r15/core/java/android/util/Size.java",
+    "sha256_upstream": "5e1fd42ef5ee88d77c2e24d0ce4a229c37cb7c28de1c054d30225436158f827d",
+    "sha256_vendored": "5e1fd42ef5ee88d77c2e24d0ce4a229c37cb7c28de1c054d30225436158f827d",
+    "license": "Apache-2.0",
+    "changes": "Only compile-time NonNull annotation removed; original method implementations unchanged"
+  },
+  {
+    "file": "framework/src/android/util/SizeF.java",
+    "source": "https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r15/core/java/android/util/SizeF.java",
+    "sha256_upstream": "bf0896e5caf99102bf3bd8ea479de8fd1980eb7b6dd88459f2f83ed2bd2baef9",
+    "sha256_vendored": "6105389264f6604071e98d82b98612f56802df96b2cc8a3cdd3687208209c7d7",
+    "license": "Apache-2.0",
+    "changes": "Only compile-time NonNull annotation removed; original method implementations unchanged"
+  },
+  {
+    "file": "framework/src/android/media/tv/TvContentRating.java",
+    "source": "https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r15/media/java/android/media/tv/TvContentRating.java",
+    "sha256_upstream": "9f2026f5013ee4a50e0dd108ae550b651f60c10c46a96e6991c85c284a182628",
+    "sha256_vendored": "243dc7f6bb0b980740a39593f86506a380e515f6d621554473a25aa331f2ad59",
+    "license": "Apache-2.0",
+    "changes": "Only NonNull compile-time annotations removed; original implementation unchanged"
+  },
+  {
+    "file": "framework/src/android/text/TextUtils.java",
+    "source": "https://android.googlesource.com/platform/frameworks/base/+/android-14.0.0_r15/core/java/android/text/TextUtils.java",
+    "sha256_upstream": "a0f2e3e8c05a228c47a9b6182608033d517eb53f78c68d1982615d24008420cd",
+    "sha256_vendored": "3f8142201d67fb93af483b82dc740c9bad3febc15e93c97ed783eebd18984361",
+    "license": "Apache-2.0",
+    "changes": "Selected isEmpty and equals methods only; implementations unchanged, annotations removed"
+  },
+  {
+    "file": "framework/src/com/android/internal/util/Preconditions.java",
+    "source": "https://android.googlesource.com/platform/frameworks/libs/modules-utils/+/android-14.0.0_r15/java/com/android/internal/util/Preconditions.java",
+    "sha256_upstream": "357716de1aad93a2754ee56dd400a8c585cf7096f07b4d85511b4ec57f492961",
+    "sha256_vendored": "ee1977afacefc9121bca5743a65cb000a65c43d7e24c4a6164245bb97abbb40f",
+    "license": "Apache-2.0",
+    "changes": "Selected checkNotNull(T), checkNotNull(T,Object) and checkArgumentFinite methods; implementations unchanged, annotations removed"
+  }
+]

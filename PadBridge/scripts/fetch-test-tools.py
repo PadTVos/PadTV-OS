@@ -1,4 +1,4 @@
-"""Pinned test-only compilers/API stubs. Never shipped as runtime components."""
+"""Pinned build/test compilers and API stubs. Never shipped as runtime components."""
 from pathlib import Path
 import hashlib, urllib.request, zipfile, tempfile
 root=Path(__file__).resolve().parents[1]/'build/test-tools';root.mkdir(parents=True,exist_ok=True)

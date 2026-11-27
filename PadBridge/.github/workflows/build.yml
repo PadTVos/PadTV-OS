@@ -25,7 +25,10 @@ jobs:
             python3 tests/build_runtime_fixtures.py
             python3 tests/build_native_fixtures.py
             python3 tests/build_media_fixtures.py
+            python3 tests/build_framework_fixtures.py
+            python3 tests/build_art_fixtures.py
             python3 tests/resources07.py
+            python3 tests/resources08.py
             python3 tests/audio_broker07.py
             python3 tests/analyzer_unit.py
             useradd -m builder
@@ -35,8 +38,11 @@ jobs:
             runuser -u builder -- python3 tests/runtime06.py
             runuser -u builder -- python3 tests/thirdparty06.py
             runuser -u builder -- python3 tests/runtime07.py
+            runuser -u builder -- python3 tests/framework08.py
             runuser -u builder -- pulseaudio --start --exit-idle-time=-1
             runuser -u builder -- python3 tests/media07.py
+            runuser -u builder -- env PADBRIDGE_RUNTIME_DIR=/source/build/runtime /source/target/release/padbridge setup-art
+            runuser -u builder -- python3 tests/art08.py
             bash scripts/build-deb.sh
           '
       - uses: actions/upload-artifact@v4

@@ -173,7 +173,13 @@ pub(crate) fn translate(version: &Path, runtime: &Path) -> Result<()> {
             .collect::<String>()
     );
     ensure!(
-        stage.path().join("classes.jar").metadata()?.len() <= 256 * 1024 * 1024,
+        stage
+            .path()
+            .join("classes.jar")
+            .metadata()
+            .context("DEX translator did not produce classes.jar")?
+            .len()
+            <= 256 * 1024 * 1024,
         "Translated JAR exceeds limit"
     );
     fs::rename(
@@ -195,9 +201,36 @@ pub fn run(
     restart: bool,
     backend_id: &str,
 ) -> Result<Value> {
-    let backend = crate::backends::select(backend_id)?;
+    manager.app_dir(package)?;
     let _guard = manager.operation_lock(package)?;
+    let mut trace = crate::startup::Trace::new(
+        manager
+            .root
+            .join("logs")
+            .join(format!("{package}.startup.json")),
+        package,
+        backend_id,
+    );
+    trace.phase("backend.select")?;
+    let mut result = run_inner(manager, package, headless, restart, backend_id, &mut trace);
+    trace.finish(&result)?;
+    if let Ok(ref mut value) = result {
+        value["startup_trace"] = json!(trace.path());
+    }
+    result
+}
+fn run_inner(
+    manager: &Manager,
+    package: &str,
+    headless: bool,
+    restart: bool,
+    backend_id: &str,
+    trace: &mut crate::startup::Trace,
+) -> Result<Value> {
+    let backend = crate::backends::select(backend_id)?;
+    trace.phase("package.integrity")?;
     let app = manager.get(package)?;
+    trace.identity(json!({"sha256":app.sha256,"signers":app.signers,"splits":app.splits}))?;
     let grants = manager.grants(package)?;
     let version = manager.app_dir(package)?.join(app.storage_id());
     ensure!(
@@ -218,6 +251,7 @@ pub fn run(
         );
         sources.push(path);
     }
+    trace.phase("dex.inspect")?;
     let diagnostic = dex::diagnose_set(&sources)?;
     ensure!(
         diagnostic["dex_errors"]
@@ -229,12 +263,14 @@ pub fn run(
     let runtime = share()
         .canonicalize()
         .context("PadBridge runtime is not installed")?;
+    trace.phase("native.stage")?;
     let native = crate::native_elf::stage(&sources, &version)?;
+    trace.phase("dex.prepare")?;
     backend.prepare(&version, &runtime)?;
     ensure!(
-        apk::digest(&version.join("classes.jar"))?
-            == fs::read_to_string(version.join("classes.jar.sha256"))?,
-        "Translated cache integrity mismatch"
+        apk::digest(&version.join(backend.artifact()))?
+            == fs::read_to_string(version.join(format!("{}.sha256", backend.artifact())))?,
+        "Runtime artifact integrity mismatch"
     );
     manager.unlock()?; // Other packages remain manageable while this one is running.
     let data = manager.root.join("data").join(package).canonicalize()?;
@@ -250,10 +286,12 @@ pub fn run(
     let mut attempts = 0;
     loop {
         attempts += 1;
+        trace.phase("sandbox.prepare")?;
         let mut cmd = sandbox(network)?;
         cmd.arg("--ro-bind").arg(&runtime).arg("/runtime");
         cmd.arg("--ro-bind").arg(&version).arg("/app");
         cmd.arg("--bind").arg(&data).arg("/data");
+        backend.configure(&mut cmd)?;
         if let Some(ref path) = certificates {
             cmd.arg("--ro-bind").arg(path).arg("/certificates");
             cmd.args(["--setenv","JAVA_TOOL_OPTIONS","-Djavax.net.ssl.trustStore=/certificates/cacerts -Djavax.net.ssl.trustStorePassword=changeit","--setenv","PADBRIDGE_CA_BUNDLE","/certificates/ca-bundle.pem"]);
@@ -305,7 +343,7 @@ pub fn run(
             &json!({
                 "apk_storage_id": app.storage_id(), "backend": backend.id(),
                 "padbridge_version": env!("CARGO_PKG_VERSION"),
-                "framework_sha256": apk::digest(&runtime.join("framework.jar"))?
+                "framework_sha256": apk::digest(&runtime.join(backend.framework()))?
             }),
         )?;
         cmd.stdout(Stdio::from(log.try_clone()?))
@@ -315,9 +353,11 @@ pub fn run(
             &app.package,
             headless,
         )?);
+        trace.phase("sandbox.execute")?;
         let status = cmd
             .status()
             .context("Mandatory bubblewrap sandbox could not start")?;
+        trace.phase("process.exit")?;
         let tail = fs::read_to_string(&log_path).unwrap_or_default();
         let tail = tail
             .chars()

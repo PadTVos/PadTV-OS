@@ -39,9 +39,11 @@ def main():
                           'scripts/validate.py':ROOT/'github/validate-catalog.py',
                           '.github/workflows/validate.yml':ROOT/'github/catalog-ci.yml'}
     mapping['PadTV-Apps'].update({p.relative_to(ROOT/'PadBridge').as_posix():p for p in files_under(ROOT/'PadBridge/compatibility/reports-0.4')})
+    mapping['PadTV-Apps'].update({p.relative_to(ROOT/'PadBridge').as_posix():p for p in files_under(ROOT/'PadBridge/compatibility/reports-0.5')})
     mapping['PadTV-Updates']={'scripts/release-manifest.py':ROOT/'scripts/release-manifest.py',
                              'releases/0.6.0.json':ROOT/'github/release-0.6.json',
                              'releases/0.7.0.json':ROOT/'github/release-0.7.json',
+                             'releases/0.8.0.json':ROOT/'github/release-0.8.json',
                              'docs/architecture.md':ROOT/'docs/system-core.md'}
     mapping['PadTV-Website']={p.relative_to(ROOT).as_posix():p for p in files_under(ROOT/'docs')}
     intros={
@@ -55,9 +57,9 @@ def main():
         'PadTV-Updates':'Metadata systémových vydání PadTV.\n\n'
             '`python scripts/release-manifest.py obraz.iso --url https://SKUTECNY-HOST/vydani.iso --output release.json --sign-key FINGERPRINT`\n\n'
             'URL musí odkazovat na skutečně publikovaný soubor. Soukromé klíče zůstávají mimo Git. '
-            'Automatický aktualizátor a rollback OS nejsou součástí 0.7. '
+            'Automatický aktualizátor a rollback OS nejsou součástí 0.8. '
             'Žádné aktivní aktualizační kanály zatím nejsou zveřejněné.\n',
-        'PadTV-Website':'Dokumentace PadTV 0.7 – Android Runtime & Multimedia.\n\n'
+        'PadTV-Website':'Dokumentace PadTV 0.8 – Android Runtime Integration.\n\n'
             '- [Architektura](docs/system-core.md)\n- [Store a repozitáře](docs/github-and-store.md)\n'
             '- [Stav ověření](docs/validation.md)\n\n'
             'Doména a veřejný web dosud nejsou nasazené. Toto je zdrojová dokumentace pro další web.\n'}

@@ -54,3 +54,25 @@ DRM module, signing key, certificate or Google Play binary is in this repository
   for compatibility analysis; not redistributed in PadTV's repositories/ISO.
 - Original Enjarify package remains unmodified on disk. `runtime/dex_fixes.py`
   applies a documented general exception-handler adapter at translation time.
+
+## Added in 0.5
+
+- `android.util.TypedValue`, `android.util.MathUtils`, `android.util.Size`,
+  `android.util.SizeF`, `android.media.tv.TvContentRating`,
+  `android.content.res.FontScaleConverter`, and the selected TextUtils and
+  Preconditions methods are AOSP Android 14 (tag
+  `android-14.0.0_r15`) sources under Apache-2.0. Original copyright headers
+  remain; only unavailable compile-time annotation imports/usages were removed.
+  Method implementations are unchanged. Original URLs and SHA-256 hashes are
+  in `third_party/aosp-utilities.json`; license in `third_party/LICENSE-AOSP.txt`.
+  This does not make the rest of the Android framework complete.
+- The optional AOSP ART 16 Linux host runtime is downloaded directly from the
+  R8 project's pinned official dependency archive, not redistributed in PadTV's
+  Git/ISO/release assets. The bundled `build_spec.xml` records upstream source
+  revisions. Runtime/libcore component licenses remain upstream licenses;
+  PadBridge does not relabel them as its own code. Source, digest and matched
+  boot classpath are documented in `docs/runtime-0.5.md` and
+  `runtime/art_runtime.py`. No device images, Google Play Services or DRM
+  binaries are installed by that helper.
+- D8/R8 is now also a pinned build-time compiler for PadBridge's own framework
+  DEX. The Android API 35 SDK jar remains compile-time only and is not shipped.

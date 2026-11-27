@@ -1,24 +1,24 @@
-# PadBridge 0.4 — experimental Android compatibility for Linux
+# PadBridge 0.5 — experimental Android compatibility for Linux
 
 PadBridge installs **unmodified, signed APKs and verified split APK sets** and executes a small
 subset of Android applications directly on Linux. Its package manager,
 supervisor, diagnostics and native rendering bridge are Rust. Java facades
-implement the supported Android API signatures. No Android OS, VM or Waydroid
-is started. This release accompanies **PadTV OS 0.7**; the two version numbers
+implement the supported Android API signatures. No virtual Android device, Android OS or Waydroid
+is started. This release accompanies **PadTV OS 0.8**; the two version numbers
 describe different projects.
 
-The first execution backend uses strict **Enjarify DEX → JVM translation and
-OpenJDK 21**, not ART. Only the subset in [0.4 implementation boundaries](docs/runtime-0.4.md) is
-implemented. It is not a general Android emulator and cannot currently run
-YouTube TV or Netflix. **Screen Test 4K 1.0.1**, an unmodified third-party TV APK,
-renders through Canvas/Wayland and responds to D-pad input with Waydroid stopped.
-The 0.4 release adds real FFmpeg demux/decode, PCM playback through a restricted
-Linux broker, MediaPlayer/SurfaceView, Mesa EGL/GLES2 rendering, Chromium WebView,
-per-app HTTPS trust and a bounded x86-64 scalar/memory ABI bridge. Their SDK-built
-APK integration tests exercise original DEX code, not a replacement player.
-**Jellyfin, YouTube and Netflix remain blocked.** ART execution, full Bionic and
-the Android linker, ARM translation, complete AndroidX/Leanback/Compose, GMS,
-DRM and certified playback are unavailable. See the [app database](compatibility/apps.json).
+Two explicit backends are available: the existing **Enjarify / OpenJDK 21**
+backend and a new **AOSP ART / matched libcore** host runtime. ART executes original
+DEX, including Java/Kotlin, multidex and split APKs, inside the mandatory sandbox.
+JNI_CreateJavaVM succeeds with the matched boot classpath and generated boot image.
+Original fixture APKs render native widgets on Wayland and respond to D-pad input.
+
+**Jellyfin, YouTube TV and Netflix remain blocked.** The ART VM is functional;
+complete Android framework and native/media compatibility are not. Existing
+Enjarify Canvas/media/WebView/HTTPS functionality is preserved. Those tests are
+not evidence that the corresponding ART paths or streaming apps work.
+Read the [0.5 implementation boundaries](docs/runtime-0.5.md) and
+[application records](compatibility/apps.json) before testing.
 
 ## Build and test (Debian 13 amd64)
 
@@ -31,6 +31,7 @@ sudo apt-get install --no-install-recommends rustc cargo pkg-config \
   libgl1-mesa-dri libasm-java chromium openssl pulseaudio-utils
 bash scripts/build.sh
 cargo test --workspace --locked
+python3 tests/build_fixtures.py
 python3 tests/integration.py
 python3 scripts/fetch-test-tools.py
 python3 tests/build_runtime_fixtures.py
@@ -44,9 +45,19 @@ python3 tests/resources07.py
 python3 tests/audio_broker07.py
 python3 tests/runtime07.py
 python3 tests/media07.py # needs a running real PulseAudio or PipeWire-pulse server
+python3 tests/build_framework_fixtures.py
+python3 tests/resources08.py
+python3 tests/framework08.py
+python3 tests/build_art_fixtures.py
+PADBRIDGE_RUNTIME_DIR=$PWD/build/runtime target/release/padbridge setup-art
+python3 tests/art08.py
 bash scripts/build-deb.sh
-sudo apt-get install ./build/padbridge_0.4.0_amd64.deb
+sudo apt-get install ./build/padbridge_0.5.0_amd64.deb
 ```
+
+Run the original runtime05 unavailable-backend test before installing ART, or set
+`PADBRIDGE_ART_ROOT` to a nonexistent directory for that suite. ART integration
+tests require a successfully activated installation and must not be skipped for a release.
 
 Integration tests require a real Linux user namespace environment. They fail
 when sandboxing is unavailable; there is no insecure fallback and no skipped
@@ -55,6 +66,8 @@ isolation test. A chroot is often insufficient. For an uninstalled build set
 
 ```sh
 padbridge backends
+padbridge setup-art  # optional pinned download; real JNI/DEX activation test
+padbridge run org.example.app --backend aosp-art
 padbridge certificates org.example.app
 padbridge trust-certificate org.example.app public-ca.pem
 padbridge untrust-certificate org.example.app CERTIFICATE_SHA256
@@ -79,7 +92,7 @@ It does not verify compositor presentation or physical display hardware. `--rest
 retries an abnormal process exit once; unsupported APIs do not restart-loop.
 
 - [Architecture, backend decision and milestones](docs/architecture.md)
-- [Current 0.4 API subset and remaining modules](docs/runtime-0.4.md)
+- [Current 0.5 implementation and remaining modules](docs/runtime-0.5.md)
 - [ART integration research](docs/art-0.2-research.md)
 - [Source study and license decisions](docs/research.md), [third-party notices](THIRD_PARTY.md)
 - [Sandbox and data model](docs/security.md)

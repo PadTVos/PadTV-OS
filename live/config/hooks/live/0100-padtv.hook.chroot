@@ -5,7 +5,7 @@ systemctl disable lightdm greetd 2>/dev/null || true
 systemctl disable waydroid-container.service 2>/dev/null || true
 systemctl enable --force padtv.service padtv-system.service NetworkManager bluetooth padtv-account.service
 systemctl set-default graphical.target
-printf 'PadTV 0.7 – Android Runtime & Multimedia\nDebian 13 (Trixie), build 0.7.0\n' > /etc/padtv-release
-printf 'PadTV 0.7 – Android Runtime & Multimedia\n' > /etc/issue
+printf 'PadTV 0.8 – Android Runtime Integration\nDebian 13 (Trixie), build 0.8.0\n' > /etc/padtv-release
+printf 'PadTV 0.8 – Android Runtime Integration\n' > /etc/issue
 plymouth-set-default-theme padtv
 update-initramfs -u -k all

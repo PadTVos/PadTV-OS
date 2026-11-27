@@ -1,10 +1,10 @@
 Package: padtv-session
-Version: 0.7.0
+Version: 0.8.0
 Section: user-interface
 Priority: optional
 Architecture: all
 Maintainer: PadTV Project <padtv@localhost>
-Depends: padbridge (>= 0.4.0), padtv-core (>= 0.7.0), python3 (>= 3.10), python3-pyqt6, python3-dbus, python3-gi, labwc, greetd, qt6-wayland, wlrctl, wlr-randr, xwayland, dbus-user-session, x11-xserver-utils, wmctrl, lxpolkit, network-manager, bluez, pipewire-audio, wireplumber, pulseaudio-utils, xdg-user-dirs, flatpak, xdg-desktop-portal, xdg-desktop-portal-gtk, xdg-desktop-portal-wlr
+Depends: padbridge (>= 0.5.0), padtv-core (>= 0.8.0), python3 (>= 3.10), python3-pyqt6, python3-dbus, python3-gi, labwc, greetd, qt6-wayland, wlrctl, wlr-randr, xwayland, dbus-user-session, x11-xserver-utils, wmctrl, lxpolkit, network-manager, bluez, pipewire-audio, wireplumber, pulseaudio-utils, xdg-user-dirs, flatpak, xdg-desktop-portal, xdg-desktop-portal-gtk, xdg-desktop-portal-wlr
 Recommends: chromium, thunar, waydroid, weston, aapt, plymouth, plymouth-themes, flatpak, xdg-desktop-portal, xdg-desktop-portal-gtk, xdg-desktop-portal-wlr
 Description: Czech television interface for Debian 13
  Native Qt launcher with directional navigation, media shortcuts and a dedicated

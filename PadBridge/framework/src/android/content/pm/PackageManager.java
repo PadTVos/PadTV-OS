@@ -5,6 +5,16 @@ import org.w3c.dom.*;
 import java.util.*;
 /** Only this package is visible inside the application's sandbox. */
 public class PackageManager {
+    public static final int GET_META_DATA=128,GET_PROVIDERS=8;
+    public ProviderInfo getProviderInfo(ComponentName component,int flags)throws NameNotFoundException{
+        own(component.getPackageName());NodeList list=Manifest.get().getElementsByTagName("provider");
+        for(int i=0;i<list.getLength();i++){Element e=(Element)list.item(i);if(!Manifest.className(e.getAttribute("name")).equals(component.getClassName()))continue;
+            ProviderInfo info=new ProviderInfo();info.name=component.getClassName();info.packageName=component.getPackageName();info.authority=e.getAttribute("authorities");info.applicationInfo=getApplicationInfo(info.packageName,flags);
+            info.processName=e.getAttribute("process");if(info.processName.startsWith(":"))info.processName=info.packageName+info.processName;if(info.processName.isEmpty())info.processName=info.packageName;
+            info.enabled=!"false".equals(e.getAttribute("enabled"));info.exported=Boolean.parseBoolean(e.getAttribute("exported"));info.initOrder=e.hasAttribute("initOrder")?Integer.decode(e.getAttribute("initOrder")):0;
+            if((flags&GET_META_DATA)!=0)info.metaData=org.padtv.bridge.Providers.metadata(e);return info;
+        }throw new NameNotFoundException(component.flattenToString());
+    }
     public static final int GET_ACTIVITIES=1,GET_PERMISSIONS=4096,MATCH_DEFAULT_ONLY=65536,PERMISSION_GRANTED=0,PERMISSION_DENIED=-1;
     public static class NameNotFoundException extends Exception {public NameNotFoundException(String s){super(s);}}
     private static void own(String p)throws NameNotFoundException{if(!Host.packageName.equals(p))throw new NameNotFoundException(p);}

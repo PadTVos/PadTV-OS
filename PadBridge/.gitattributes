@@ -1,3 +1,10 @@
 * text=auto eol=lf
 *.png binary
 *.apk binary
+# Preserve upstream AOSP whitespace so the recorded vendored hashes remain exact.
+framework/src/android/util/TypedValue.java whitespace=-blank-at-eol,-blank-at-eof
+framework/src/android/util/MathUtils.java whitespace=-blank-at-eol,-blank-at-eof
+framework/src/android/content/res/FontScaleConverter.java whitespace=-blank-at-eol,-blank-at-eof
+framework/src/android/util/Size.java whitespace=-blank-at-eol,-blank-at-eof
+framework/src/android/util/SizeF.java whitespace=-blank-at-eol,-blank-at-eof
+framework/src/android/media/tv/TvContentRating.java whitespace=-blank-at-eol,-blank-at-eof

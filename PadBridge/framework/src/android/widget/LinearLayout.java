@@ -7,5 +7,5 @@ public class LinearLayout extends ViewGroup {
     public LinearLayout(Context context){super(context);org.padtv.bridge.Native.layout(bridgeId,HORIZONTAL);}
     public void setOrientation(int value){if(value!=VERTICAL&&value!=HORIZONTAL)throw new IllegalArgumentException("Invalid orientation");orientation=value;org.padtv.bridge.Native.layout(bridgeId,value);}
     public int getOrientation(){return orientation;}
-    public static class LayoutParams extends ViewGroup.LayoutParams {public LayoutParams(int w,int h){super(w,h);}}
+    public static class LayoutParams extends ViewGroup.MarginLayoutParams {public LayoutParams(int w,int h){super(w,h);}}
 }
