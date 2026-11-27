@@ -1,0 +1,9 @@
+abi <abi/4.0>,
+include <tunables/global>
+
+# The Ubuntu CI host restricts unprivileged namespaces. Permit only Chromium's
+# root-owned executable to create its own sandbox, as on the Debian 13 target.
+# Bubblewrap confinement and Chromium's sandbox remain enabled.
+profile padbridge-ci-chromium /usr/lib/chromium/chromium flags=(unconfined) {
+  userns,
+}

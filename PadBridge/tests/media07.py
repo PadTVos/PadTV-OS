@@ -50,8 +50,12 @@ class Media07Tests(unittest.TestCase):
             return r
         finally:
             if capture is not None:capture.terminate();capture.wait(timeout=5)
-            subprocess.run(['pactl','set-default-sink',previous],check=True)
             subprocess.run(['pactl','unload-module',module],check=True)
+            # PulseAudio removes its automatic fallback when a real/test sink
+            # appears. Restore only an output that still exists after cleanup.
+            sinks=json.loads(subprocess.check_output(['pactl','--format=json','list','sinks'],text=True))
+            if any(sink['name']==previous for sink in sinks):
+                subprocess.run(['pactl','set-default-sink',previous],check=True)
     def test_audio_track_reaches_linux_output_and_pause_freezes_queue(self):
         r=self.with_capture('audio',500);self.assertIn('AUDIO_OUTPUT_OK',r['output'])
     def test_media_player_pause_seek_and_replay_preserve_state(self):

@@ -7,6 +7,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Permit Chromium sandbox namespaces on the Ubuntu CI host
+        run: |
+          if [ -f /proc/sys/kernel/apparmor_restrict_unprivileged_userns ] && [ "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns)" = 1 ]; then
+            sudo apparmor_parser -r tests/ci/chromium-userns.apparmor
+          fi
       - name: Debian build and real sandbox integration tests
         run: |
           docker run --rm --privileged -v "$PWD:/source" -w /source debian:13 bash -euxc '
@@ -23,7 +30,7 @@ jobs:
             python3 tests/audio_broker07.py
             python3 tests/analyzer_unit.py
             useradd -m builder
-            chown -R builder:builder /source
+            chown -R builder:builder /source/build
             runuser -u builder -- python3 tests/integration.py
             runuser -u builder -- python3 tests/runtime05.py
             runuser -u builder -- python3 tests/runtime06.py
@@ -37,3 +44,9 @@ jobs:
         with:
           name: padbridge-debian-amd64
           path: build/padbridge_*.deb
+      - name: Remove CI-only Chromium namespace profile
+        if: always()
+        run: |
+          if sudo test -e /sys/kernel/security/apparmor/profiles && sudo grep -q '^padbridge-ci-chromium ' /sys/kernel/security/apparmor/profiles; then
+            sudo apparmor_parser -R tests/ci/chromium-userns.apparmor
+          fi
