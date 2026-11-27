@@ -1,9 +1,11 @@
 abi <abi/4.0>,
 include <tunables/global>
 
-# The Ubuntu CI host restricts unprivileged namespaces. Permit only Chromium's
-# root-owned executable to create its own sandbox, as on the Debian 13 target.
-# Bubblewrap confinement and Chromium's sandbox remain enabled.
-profile padbridge-ci-chromium /usr/lib/chromium/chromium flags=(unconfined) {
+# The Ubuntu host restricts nested namespaces. Docker explicitly assigns this
+# CI-only profile to the disposable Debian test container. Attaching by host
+# executable path cannot match Chromium inside Docker and bubblewrap mounts.
+# Bubblewrap and Chromium still enforce their own complete runtime sandboxes.
+# This grants namespaces only in that container, not globally on the CI host.
+profile padbridge-ci-chromium flags=(unconfined) {
   userns,
 }
